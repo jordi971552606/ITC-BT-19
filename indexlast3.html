@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrenador de càlcul d'Intensitat, secció i caigudes de tensió</title>
+    
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #005A9C;
+            --secondary-color: #f4f4f4;
+            --border-color: #ddd;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --text-dark: #333;
+            --text-light: #f8f9fa;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            background-color: var(--secondary-color);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .page {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            box-sizing: border-box;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* --- ESTILOS LOGIN --- */
+        .login-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .login-box {
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+        
+        .lang-selector {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .lang-selector button {
+            background-color: var(--secondary-color);
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+        }
+
+        .lang-selector button.active {
+            background-color: var(--primary-color);
+            color: var(--text-light);
+            border-color: var(--primary-color);
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+        }
+
+        select, input[type="password"], input[type="file"] {
+            width: 100%;
+            max-width: 300px;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color: 0.3s;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #004170;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            margin-top: 10px;
+            font-weight: bold;
+            min-height: 1.2em;
+        }
+        
+        .test-buttons-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* --- ESTILOS PÁGINAS ALUMNO Y PROFESOR --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background-color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .student-page {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .student-page.active {
+            display: block;
+        }
+
+        .exercise-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .exercise-card {
+            border: 1px solid var(--border-color);
+            border-left: 5px solid var(--primary-color);
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #fafafa;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .exercise-card p {
+            margin: 0;
+        }
+        
+        .exercise-card ul {
+            padding-left: 20px;
+            margin: 0;
+            flex-grow: 1;
+        }
+        
+        .exercise-card li {
+            margin-bottom: 5px;
+        }
+
+        .exercise-card .formula {
+            font-style: italic;
+            color: #555;
+            background-color: #e9e9e9;
+            padding: 5px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        .exercise-card .explanation {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .exercise-card .result {
+            font-weight: bold;
+            color: var(--success-color);
+        }
+        .exercise-card .result.incorrect-result {
+            color: var(--error-color);
+        }
+        .exercise-card .result.optimal-result {
+            color: var(--primary-color);
+        }
+
+        .exercise-card input[type="text"] {
+            width: 100px;
+            padding: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            margin-left: 10px;
+        }
+        
+        .exercise-card input.correct {
+            border: 2px solid var(--success-color);
+            background-color: #f0fff4;
+        }
+
+        .exercise-card input.incorrect {
+            border: 2px solid var(--error-color);
+            background-color: #fff0f0;
+        }
+
+        .correction-result {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #eaf5ff;
+            border: 1px solid #bde0ff;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .correction-result .result {
+            color: var(--primary-color);
+        }
+
+        /* --- ESTILOS PROFESOR --- */
+        .teacher-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .teacher-panel > div {
+            margin-bottom: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: var(--text-light);
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: var(--secondary-color);
+        }
+
+        .status-passed {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+        .status-pending {
+            color: #E8A87C;
+            font-weight: bold;
+        }
+        
+        .info {
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-page" class="page active">
+        <div class="login-container">
+            <h1 data-lang="main_title">Entrenador de càlcul d'Intensitat, secció i caigudes de tensió</h1>
+            
+            <div class="login-box">
+                <h2 data-lang="student_login_title">Accés Alumne</h2>
+                <div class="lang-selector">
+                    <button id="lang-ca" onclick="setLanguage('ca')">Català</button>
+                    <button id="lang-es" onclick="setLanguage('es')">Castellano</button>
+                </div>
+                <select id="student-select" aria-label="Selecciona el teu nom">
+                    <option value="" data-lang="student_select_placeholder">-- Primer el professor ha de carregar la llista --</option>
+                </select>
+                <button onclick="login('student')" data-lang="enter_button">Entrar</button>
+            </div>
+
+            <div class="login-box">
+                <h2 data-lang="teacher_login_title">Accés Professor</h2>
+                <input type="password" id="teacher-password" data-lang-placeholder="password_placeholder" placeholder="Contrasenya">
+                <button onclick="login('teacher')" data-lang="enter_button">Entrar</button>
+                <p id="teacher-error" class="error-message"></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="student-view" class="page">
+        <header>
+            <h1 id="student-welcome"></h1>
+            <div>
+                <button id="back-button" onclick="goBack()" data-lang="back_button" style="display: none;">Tornar</button>
+                <button onclick="logout()" data-lang="logout_button">Tancar Sessió</button>
+            </div>
+        </header>
+
+        <div id="selection-page" class="student-page">
+            <h2 data-lang="selection_title">Tria el tipus d'exercici</h2>
+            <p data-lang="selection_desc">Selecciona quina part vols practicar.</p>
+            <div class="test-buttons-container">
+                <button onclick="startExercise('intensity')" data-lang="selection_intensity">Càlcul d'Intensitat</button>
+                <button onclick="startExercise('section')" data-lang="selection_section">Càlcul de Secció per Caiguda de Tensió</button>
+                <button onclick="startExercise('voltage-drop')" data-lang="selection_voltage_drop">Càlcul de Caiguda de Tensió</button>
+                <button onclick="startExercise('max-length')" data-lang="selection_max_length">Càlcul de Longitud Màxima</button>
+                <button onclick="startExercise('section-intensity')" data-lang="selection_section_intensity">Elecció de Secció per Intensitat (ITC-BT-19)</button>
+                <button onclick="startExercise('section-both')" data-lang="selection_section_both">Càlcul de Secció (Intensitat i ΔV)</button>
+                <button onclick="startExercise('max-length-both')" data-lang="selection_max_length_both">Càlcul de Longitud Màxima (Intensitat i ΔV)</button>
+            </div>
+        </div>
+
+        <div id="intensity-examples-page" class="student-page">
+            <h2 data-lang="intensity_examples_title">Càlcul d'Intensitat (Exemples)</h2>
+            <p data-lang="intensity_examples_desc">Aquí tens 10 exercicis resolts perquè repassis. Quan estiguis a punt, passa al test.</p>
+            <div id="intensity-examples-container" class="exercise-container"></div>
+            <button onclick="showPage('intensity-test-page')" data-lang="start_intensity_test_button">Començar Test</button>
+        </div>
+
+        <div id="intensity-test-page" class="student-page">
+            <h2 data-lang="intensity_test_title">Test de Càlcul d'Intensitat</h2>
+            <p data-lang="intensity_test_desc">Calcula la intensitat (en amperes) per als 10 casos següents. Fes servir dos decimals i la coma (,) com a separador.</p>
+            <div id="intensity-test-container" class="exercise-container"></div>
+            <div id="intensity-test-buttons" class="test-buttons-container">
+                <button onclick="checkIntensityAnswers()" data-lang="check_test_button">Corregir Test</button>
+            </div>
+            <p id="intensity-test-error" class="error-message"></p>
+        </div>
+
+        <div id="section-examples-page" class="student-page">
+            <h2 data-lang="section_examples_title">Càlcul de Secció (Exemples)</h2>
+            <p data-lang="section_examples_desc">Aquí tens 10 exercicis resolts per repassar el càlcul de seccions.</p>
+            <div id="section-examples-container" class="exercise-container"></div>
+            <button onclick="showPage('section-test-page')" data-lang="start_section_test_button">Començar Test</button>
+        </div>
+
+        <div id="section-test-page" class="student-page">
+            <h2 data-lang="section_test_title">Test de Càlcul de Secció</h2>
+            <p data-lang="section_test_desc">Ara calcula la secció del conductor (en mm²) i tria el valor normalitzat igual o superior. Fes servir la coma (,) com a separador decimal si cal.</p>
+            <div id="section-test-container" class="exercise-container"></div>
+            <div id="section-test-buttons" class="test-buttons-container">
+                <button onclick="checkSectionAnswers()" data-lang="check_test_button">Corregir Test</button>
+            </div>
+             <p id="section-test-error" class="error-message"></p>
+        </div>
+        
+        <div id="voltage-drop-examples-page" class="student-page">
+            <h2 data-lang="voltage_drop_examples_title">Càlcul de Caiguda de Tensió (Exemples)</h2>
+            <p data-lang="voltage_drop_examples_desc">Aquí tens 10 exercicis resolts. Calcula la caiguda de tensió i comprova si és admissible.</p>
+            <div id="voltage-drop-examples-container" class="exercise-container"></div>
+            <button onclick="showPage('voltage-drop-test-page')" data-lang="start_voltage_drop_test_button">Començar Test</button>
+        </div>
+
+        <div id="voltage-drop-test-page" class="student-page">
+            <h2 data-lang="voltage_drop_test_title">Test de Càlcul de Caiguda de Tensió</h2>
+            <p data-lang="voltage_drop_test_desc">Calcula la caiguda de tensió (en Volts) per als 10 casos següents. Fes servir dos decimals i la coma (,) com a separador.</p>
+            <div id="voltage-drop-test-container" class="exercise-container"></div>
+            <div id="voltage-drop-test-buttons" class="test-buttons-container">
+                <button onclick="checkVoltageDropAnswers()" data-lang="check_test_button">Corregir Test</button>
+            </div>
+            <p id="voltage-drop-test-error" class="error-message"></p>
+        </div>
+
+        <div id="max-length-examples-page" class="student-page">
+            <h2 data-lang="max_length_examples_title">Càlcul de Longitud Màxima (Exemples)</h2>
+            <p data-lang="max_length_examples_desc">Aquí tens 10 exercicis resolts on es calcula la longitud màxima d'una línia.</p>
+            <div id="max-length-examples-container" class="exercise-container"></div>
+            <button onclick="showPage('max-length-test-page')" data-lang="start_max_length_test_button">Començar Test</button>
+        </div>
+
+        <div id="max-length-test-page" class="student-page">
+            <h2 data-lang="max_length_test_title">Test de Càlcul de Longitud Màxima</h2>
+            <p data-lang="max_length_test_desc">Calcula la longitud màxima (en metres) per als 10 casos següents. Fes servir dos decimals i la coma (,) com a separador.</p>
+            <div id="max-length-test-container" class="exercise-container"></div>
+            <div id="max-length-test-buttons" class="test-buttons-container">
+                <button onclick="checkMaxLengthAnswers()" data-lang="check_test_button">Corregir Test</button>
+            </div>
+            <p id="max-length-test-error" class="error-message"></p>
+        </div>
+
+        <div id="section-intensity-examples-page" class="student-page">
+            <h2 data-lang="section_intensity_examples_title">Elecció de Secció per Intensitat (Exemples)</h2>
+            <p data-lang="section_intensity_examples_desc">Aquí tens 10 exercicis resolts. Tria la secció normalitzada segons la intensitat màxima admissible per al tipus d'instal·lació.</p>
+            <div id="section-intensity-examples-container" class="exercise-container"></div>
+            <button onclick="showPage('section-intensity-test-page')" data-lang="start_section_intensity_test_button">Començar Test</button>
+        </div>
+
+        <div id="section-intensity-test-page" class="student-page">
+            <h2 data-lang="section_intensity_test_title">Test d'Elecció de Secció per Intensitat</h2>
+            <p data-lang="section_intensity_test_desc">Tria la secció normalitzada (en mm²) per als 10 casos següents segons la ITC-BT-19.</p>
+            <div id="section-intensity-test-container" class="exercise-container"></div>
+            <div id="section-intensity-test-buttons" class="test-buttons-container">
+                <button onclick="checkSectionIntensityAnswers()" data-lang="check_test_button">Corregir Test</button>
+            </div>
+            <p id="section-intensity-test-error" class="error-message"></p>
+        </div>
+
+        <div id="section-both-examples-page" class="student-page">
+            <h2 data-lang="section_both_examples_title">Càlcul de Secció per Intensitat i ΔV (Exemples)</h2>
+            <p data-lang="section_both_examples_desc">Aquí tens 10 exercicis resolts. Calcula la secció per intensitat i per caiguda de tensió, i tria la més gran.</p>
+            <div id="section-both-examples-container" class="exercise-container"></div>
+            <button onclick="showPage('section-both-test-page')" data-lang="start_section_both_test_button">Començar Test</button>
+        </div>
+
+        <div id="section-both-test-page" class="student-page">
+            <h2 data-lang="section_both_test_title">Test de Càlcul de Secció (Intensitat i ΔV)</h2>
+            <p data-lang="section_both_test_desc">Calcula la secció per intensitat i per caiguda de tensió, i tria el valor normalitzat superior de la més gran.</p>
+            <div id="section-both-test-container" class="exercise-container"></div>
+            <div id="section-both-test-buttons" class="test-buttons-container">
+                <button onclick="checkSectionBothAnswers()" data-lang="check_test_button">Corregir Test</button>
+            </div>
+            <p id="section-both-test-error" class="error-message"></p>
+        </div>
+
+        <div id="max-length-both-examples-page" class="student-page">
+            <h2 data-lang="max_length_both_examples_title">Càlcul de Longitud Màxima per Intensitat i ΔV (Exemples)</h2>
+            <p data-lang="max_length_both_examples_desc">Aquí tens 10 exercicis resolts. Determina la secció per intensitat i després calcula la longitud màxima per caiguda de tensió.</p>
+            <div id="max-length-both-examples-container" class="exercise-container"></div>
+            <button onclick="showPage('max-length-both-test-page')" data-lang="start_max_length_both_test_button">Començar Test</button>
+        </div>
+
+        <div id="max-length-both-test-page" class="student-page">
+            <h2 data-lang="max_length_both_test_title">Test de Càlcul de Longitud Màxima (Intensitat i ΔV)</h2>
+            <p data-lang="max_length_both_test_desc">Primer, tria la secció mínima per intensitat. Després, calcula la longitud màxima (en metres) per a aquesta secció.</p>
+            <div id="max-length-both-test-container" class="exercise-container"></div>
+            <div id="max-length-both-test-buttons" class="test-buttons-container">
+                <button onclick="checkMaxLengthBothAnswers()" data-lang="check_test_button">Corregir Test</button>
+            </div>
+            <p id="max-length-both-test-error" class="error-message"></p>
+        </div>
+
+        <div id="final-page" class="student-page">
+            <h2 data-lang="test_passed_title">Test superat!</h2>
+            <p data-lang="test_passed_desc">Has respost correctament a tots els exercicis. Bon treball!</p>
+            <button onclick="showPage('selection-page')" data-lang="back_to_menu_button">Tornar al menú</button>
+        </div>
+    </div>
+
+    <div id="teacher-view" class="page">
+        <header>
+            <h1 data-lang="teacher_panel_title">Panell del Professor</h1>
+            <button onclick="logout()" data-lang="logout_button">Tancar Sessió</button>
+        </header>
+
+        <div class="teacher-panel">
+            <div>
+                <h2 data-lang="upload_list_title">Pujar Llista d'Alumnes</h2>
+                <p data-lang="upload_list_desc">Puja un arxiu ODS o CSV amb dues columnes: <strong>nom</strong> i <strong>correu electrònic</strong> (sense capçalera).</p>
+                <input type="file" id="file-upload" accept=".ods, .csv">
+                <p class="info" data-lang="upload_list_info">Nota: Per a ODS, assegura't que les dades estiguin al primer full de l'arxiu.</p>
+            </div>
+            
+            <div>
+                <h2 data-lang="progress_report_title">Informe de Progrés d'Alumnes</h2>
+                <div id="progress-report" style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-lang="table_student">Alumne</th>
+                                <th data-lang="table_email">Correu electrònic</th>
+                                <th data-lang="table_intensity_test">Test d'Intensitat</th>
+                                <th data-lang="table_section_test">Test de Secció</th>
+                                <th data-lang="table_voltage_drop_test">Test de Caiguda de Tensió</th>
+                                <th data-lang="table_max_length_test">Test de Longitud Màxima</th>
+                                <th data-lang="table_section_intensity_test">Test Secció per Intensitat</th>
+                                <th data-lang="table_section_both_test">Test Secció (Ambdós)</th>
+                                <th data-lang="table_max_length_both_test">Test Long. Màx. (Ambdós)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ===================== VARIABLES GLOBALES Y CONSTANTES =====================
+        const V_MONOFASICA = 230;
+        const V_TRIFASICA = 400;
+        const SQRT3 = 1.732;
+        const NORMALIZED_SECTIONS = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400];
+        
+		const AMPACIDAD_ITC_BT_19 = {
+			"cobre": {
+				"pvc": {
+					"A1": { 1.5: 11, 2.5: 15.5, 4: 20, 6: 26, 10: 36, 16: 48, 25: 63, 35: 77, 50: 91, 70: 115, 95: 140, 120: 161 },
+					"A2": { 1.5: 15.5, 2.5: 21, 4: 29, 6: 37, 10: 52, 16: 69, 25: 89, 35: 109, 50: 133, 70: 170, 95: 207, 120: 240 },
+					"B1": { 1.5: 13.5, 2.5: 18, 4: 24, 6: 31, 10: 43, 16: 59, 25: 77, 35: 95, 50: 116, 70: 148, 95: 180, 120: 207, 150: 247, 185: 281, 240: 330 },
+					"B2": { 1.5: 12.5, 2.5: 17, 4: 22, 6: 29, 10: 40, 16: 53, 25: 69, 35: 82, 50: 101, 70: 128, 95: 155, 120: 187, 185: 216, 240: 247 },
+					"C": { 1.5: 14.5, 2.5: 20, 4: 28, 6: 36, 10: 49, 16: 66, 25: 86, 35: 106, 50: 128, 70: 162, 95: 196, 120: 226, 150: 259, 185: 294, 240: 345 },
+					"D": { 1.5: 17, 2.5: 22.5, 4: 29, 6: 37, 10: 49, 16: 63, 25: 81, 35: 97, 50: 115, 70: 143, 95: 170, 120: 192, 150: 218, 185: 245, 240: 282 },
+					"E": { 1.5: 16.5, 2.5: 22, 4: 30, 6: 39, 10: 54, 16: 72, 25: 95, 35: 119, 50: 145, 70: 185, 95: 224, 120: 260 },
+					"F": { 1.5: 17.5, 2.5: 24, 4: 32, 6: 41, 10: 57, 16: 73, 25: 95, 35: 119, 50: 151, 70: 193, 95: 234, 120: 272 }
+				},
+				"xlpe": {
+					"A1": { 1.5: 14.5, 2.5: 20, 4: 26, 6: 34, 10: 46, 16: 63, 25: 82, 35: 101, 50: 122, 70: 155, 95: 187, 120: 216 },
+					"A2": { 1.5: 19, 2.5: 26, 4: 34, 6: 44, 10: 60, 16: 81, 25: 103, 35: 127, 50: 155, 70: 199, 95: 241, 120: 280 },
+					"B1": { 1.5: 17.5, 2.5: 24, 4: 32, 6: 41, 10: 57, 16: 77, 25: 100, 35: 124, 50: 151, 70: 193, 95: 234, 120: 272, 150: 313, 185: 356, 240: 419 },
+					"B2": { 1.5: 16, 2.5: 22, 4: 30, 6: 39, 10: 54, 16: 72, 25: 91, 35: 109, 50: 133, 70: 170, 95: 207, 120: 240, 150: 276, 185: 314, 240: 368 },
+					"C": { 1.5: 19, 2.5: 26, 4: 36, 6: 46, 10: 63, 16: 85, 25: 108, 35: 133, 50: 162, 70: 208, 95: 252, 120: 293, 150: 337, 185: 385, 240: 455 },
+					"D": { 1.5: 21, 2.5: 27.5, 4: 35, 6: 44, 10: 58, 16: 75, 25: 96, 35: 117, 50: 138, 70: 170, 95: 202, 120: 230, 150: 260, 185: 291, 240: 336 },
+					"E": { 1.5: 20, 2.5: 27, 4: 36, 6: 46, 10: 63, 16: 85, 25: 108, 35: 133, 50: 162, 70: 208, 95: 252, 120: 293 },
+					"F": { 1.5: 21, 2.5: 30, 4: 40, 6: 52, 10: 72, 16: 97, 25: 122, 35: 153, 50: 188, 70: 243, 95: 298, 120: 350 }
+				}
+			},
+			"aluminio": {
+				"pvc": {
+					"A1": { 2.5: 12, 4: 16, 6: 20, 10: 27, 16: 37, 25: 48, 35: 59, 50: 70, 70: 90, 95: 115, 120: 140 },
+					"A2": { 2.5: 12, 4: 16, 6: 20, 10: 27, 16: 37, 25: 48, 35: 59, 50: 70, 70: 90, 95: 115, 120: 140 },
+					"B1": { 2.5: 12, 4: 16, 6: 20, 10: 27, 16: 37, 25: 48, 35: 59, 50: 70, 70: 90, 95: 115, 120: 140 },
+					"B2": { 2.5: 12, 4: 16, 6: 20, 10: 27, 16: 37, 25: 48, 35: 59, 50: 70, 70: 90, 95: 115, 120: 140 },
+					"C": { 2.5: 16.5, 4: 21, 6: 29, 10: 38, 16: 52, 25: 66, 35: 81, 50: 100, 70: 127, 95: 154, 120: 179 },
+					"E": { 2.5: 16.5, 4: 21, 6: 29, 10: 38, 16: 52, 25: 66, 35: 81, 50: 100, 70: 127, 95: 154, 120: 179 },
+					"F": { 2.5: 17.5, 4: 23, 6: 30, 10: 41, 16: 55, 25: 70, 35: 88, 50: 108, 70: 139, 95: 169, 120: 196 }
+				},
+				"xlpe": {
+					"A1": { 2.5: 15, 4: 20, 6: 25, 10: 35, 16: 46, 25: 60, 35: 74, 50: 95, 70: 121, 95: 146, 120: 169 },
+					"A2": { 2.5: 15, 4: 20, 6: 25, 10: 35, 16: 46, 25: 60, 35: 74, 50: 95, 70: 121, 95: 146, 120: 169 },
+					"B1": { 2.5: 16, 4: 21, 6: 28, 10: 40, 16: 50, 25: 63, 35: 78, 50: 101, 70: 130, 95: 159, 120: 184 },
+					"B2": { 2.5: 15, 4: 20, 6: 25, 10: 35, 16: 46, 25: 60, 35: 74, 50: 95, 70: 121, 95: 146, 120: 169 },
+					"C": { 2.5: 18, 4: 24, 6: 31, 10: 44, 16: 57, 25: 72, 35: 89, 50: 113, 70: 145, 95: 177, 120: 205 },
+					"D": { 16: 58, 25: 74, 35: 90, 50: 107, 70: 132, 95: 157, 120: 178, 150: 201, 185: 226, 240: 261, 300: 295 },
+					"E": { 2.5: 19, 4: 25, 6: 32, 10: 44, 16: 60, 25: 75, 35: 93, 50: 118, 70: 151, 95: 183, 120: 213 },
+					"F": { 2.5: 21, 4: 28, 6: 36, 10: 50, 16: 66, 25: 82, 35: 109, 50: 132, 70: 180, 95: 219, 120: 254 }
+				}
+			}
+		};
+
+
+        const defaultStudentList = [
+            { "nombre": "Dariel Aguasvivas de Jesus", "email": "daguasvivas1494@alumnes.politecnicllevant.cat" },
+            { "nombre": "Alfonso Caballero Montiel", "email": "N/A" },
+            { "nombre": "Andrés Caballero Montiel", "email": "acaballero1512@alumnes.politecnicllevant.cat" },
+            { "nombre": "José Manuel Castaño Herrera", "email": "jcastano1517@alumnes.politecnicllevant.cat" },
+            { "nombre": "Jonatan Cervilla Cortés", "email": "jcervilla1518@alumnes.politecnicllevant.cat" },
+            { "nombre": "Bryan German Carvajal Vargas", "email": "bcarvajal1401@alumnes.politecnicllevant.cat" },
+            { "nombre": "Mohamed El miri", "email": "melmiri1269@alumnes.politecnicllevant.cat" },
+            { "nombre": "Miguel Alejandro Gonzalez Moreno", "email": "mgonzalez1472@alumnes.politecnicllevant.cat" },
+            { "nombre": "Marc Jaime Darder", "email": "mjaime1473@alumnes.politecnicllevant.cat" },
+            { "nombre": "Mohamed Kouroma", "email": "mkourouma1210@alumnes.politecnicllevant.cat" },
+            { "nombre": "Jaume Lopéz Llull", "email": "jlopez1211@alumnes.politecnicllevant.cat" },
+            { "nombre": "Juan Luis Marquez Gutierrez", "email": "jmarquez1506@alumnes.politecnicllevant.cat" },
+            { "nombre": "Sofian Ochen Echahbouni", "email": "sochen929@alumnes.politecnicllevant.cat" },
+            { "nombre": "Yeremy Josep Olivares llanos", "email": "jolivares1077@alumnes.politecnicllevant.cat" },
+            { "nombre": "Joan Miquel Oliver Vidal", "email": "N/A" }
+        ];
+
+        const translations = {
+            ca: {
+                main_title: "Entrenador de càlcul d'Intensitat, secció i caigudes de tensió",
+                student_login_title: "Accés Alumne", teacher_login_title: "Accés Professor", student_select_placeholder: "-- El professor ha de carregar la llista --", student_select_loaded: "-- Selecciona el teu nom --",
+                enter_button: "Entrar", password_placeholder: "Contrasenya", incorrect_password: "Contrasenya incorrecta.", select_name_alert: "Si us plau, selecciona el teu nom.",
+                logout_button: "Tancar Sessió", back_button: "Tornar", welcome_message: "Benvingut/da,",
+                teacher_panel_title: "Panell del Professor", upload_list_title: "Pujar Llista d'Alumnes", upload_list_desc: "Puja un arxiu ODS o CSV amb dues columnes: <strong>nom</strong> i <strong>correu electrònic</strong> (sense capçalera).",
+                upload_list_info: "Nota: Per a ODS, assegura't que les dades estiguin al primer full de l'arxiu.", progress_report_title: "Informe de Progrés d'Alumnes", table_student: "Alumne", table_email: "Correu electrònic",
+                table_intensity_test: "Test d'Intensitat", table_section_test: "Test de Secció", table_voltage_drop_test: "Test de Caiguda de Tensió", table_max_length_test: "Test de Longitud Màxima",
+                table_section_intensity_test: "Test Secció per Intensitat", table_section_both_test: "Test Secció (Ambdós)", table_max_length_both_test: "Test Long. Màx. (Ambdós)",
+                no_students_loaded: "No hi ha alumnes carregats. Si us plau, puja un arxiu.", students_loaded_alert: "alumnes carregats correctament.",
+                selection_title: "Tria el tipus d'exercici", selection_desc: "Selecciona quina part vols practicar.", selection_intensity: "Càlcul d'Intensitat", selection_section: "Càlcul de Secció per Caiguda de Tensió", selection_voltage_drop: "Càlcul de Caiguda de Tensió", selection_max_length: "Càlcul de Longitud Màxima",
+                selection_section_intensity: "Elecció de Secció per Intensitat (ITC-BT-19)", selection_section_both: "Càlcul de Secció (Intensitat i ΔV)", selection_max_length_both: "Càlcul de Longitud Màxima (Intensitat i ΔV)",
+                intensity_examples_title: "Càlcul d'Intensitat (Exemples)", intensity_examples_desc: "Aquí tens 10 exercicis resolts perquè repassis. Quan estiguis a punt, passa al test.", start_intensity_test_button: "Començar Test",
+                intensity_test_title: "Test de Càlcul d'Intensitat",                 intensity_test_desc: "Calcula la intensitat (en amperes) per als 10 casos següents. Fes servir dos decimals i la coma (,) com a separador.",
+                intensity_test_statement: "Línia {tipo} amb una potència de <strong>{P}W</strong> i un factor de potència de <strong>{fp}</strong>.",
+                check_test_button: "Corregir Test",
+                section_examples_title: "Càlcul de Secció (Exemples)", section_examples_desc: "Aquí tens 10 exercicis resolts per repassar el càlcul de seccions.", start_section_test_button: "Començar Test",
+                section_test_title: "Test de Càlcul de Secció", section_test_desc: "Ara calcula la secció del conductor (en mm²) i tria el valor normalitzat igual o superior. Fes servir la coma (,) com a separador decimal si cal.",
+                voltage_drop_examples_title: "Càlcul de Caiguda de Tensió (Exemples)", voltage_drop_examples_desc: "Aquí tens 10 exercicis resolts. Calcula la caiguda de tensió i comprova si és admissible.", start_voltage_drop_test_button: "Començar Test",
+                voltage_drop_test_title: "Test de Càlcul de Caiguda de Tensió", voltage_drop_test_desc: "Calcula la caiguda de tensió (en Volts) per als 10 casos següents. Fes servir dos decimals i la coma (,) com a separador.",
+                max_length_examples_title: "Càlcul de Longitud Màxima (Exemples)", max_length_examples_desc: "Aquí tens 10 exercicis resolts on es calcula la longitud màxima d'una línia.", start_max_length_test_button: "Començar Test",
+                max_length_test_title: "Test de Càlcul de Longitud Màxima", max_length_test_desc: "Calcula la longitud màxima (en metres) per als 10 casos següents. Fes servir dos decimals i la coma (,) com a separador.",
+                section_intensity_examples_title: "Elecció de Secció per Intensitat (Exemples)", section_intensity_examples_desc: "Aquí tens 10 exercicis resolts. Tria la secció normalitzada segons la intensitat màxima admissible per al tipus d'instal·lació.", start_section_intensity_test_button: "Començar Test",
+                section_intensity_test_title: "Test d'Elecció de Secció per Intensitat", section_intensity_test_desc: "Tria la secció normalitzada (en mm²) per als 10 casos següents segons la ITC-BT-19.",
+                section_both_examples_title: "Càlcul de Secció per Intensitat i ΔV (Exemples)", section_both_examples_desc: "Aquí tens 10 exercicis resolts. Calcula la secció per intensitat i per caiguda de tensió, i tria la més gran.", start_section_both_test_button: "Començar Test",
+                section_both_test_title: "Test de Càlcul de Secció (Intensitat i ΔV)", section_both_test_desc: "Calcula la secció per intensitat i per caiguda de tensió, i tria el valor normalitzat superior de la més gran.",
+                max_length_both_examples_title: "Càlcul de Longitud Màxima per Intensitat i ΔV (Exemples)", max_length_both_examples_desc: "Aquí tens 10 exercicis resolts. Determina la secció per intensitat i després calcula la longitud màxima per caiguda de tensió.", start_max_length_both_test_button: "Començar Test",
+                max_length_both_test_title: "Test de Càlcul de Longitud Màxima (Intensitat i ΔV)", max_length_both_test_desc: "Primer, tria la secció mínima per intensitat. Després, calcula la longitud màxima (en metres) per a aquesta secció.",
+                test_passed_title: "Test superat!", test_passed_desc: "Has respost correctament a tots els exercicis. Bon treball!", back_to_menu_button: "Tornar al menú",
+                exercise: "Exercici", result: "Resultat", calc_intensity_for: "Calcular la intensitat per a una línia", with_power_and_pf: "amb una potència de <strong>{P}W</strong> i un factor de potència de <strong>{fp}</strong>.",
+                power: "Potència", pf: "Factor de Potència", intensity: "Intensitat",
+                calc_section_for: "Calcular la secció per a:", system: "Sistema", power_long: "Potència: <strong>{P}W</strong>", power_long_with_l: "Potència: <strong>{P}W</strong>, Longitud: <strong>{L}m</strong>", conductor: "Conductor", line_type: "Tipus de línia", section: "Secció",
+                monofasica: "monofàsica", trifasica: "trifàsica", monofasic: "Monofàsic", trifasic: "Trifàsic",
+                incorrect_answers_feedback: "Algunes respostes són incorrectes. Has d'encertar-les totes per aprovar.", try_again_button: "Tornar a intentar (nous exercicis)", correct_answer_is: "Resposta correcta:",
+                calculated_section: "Secció calculada (S_calc)", chosen_normalized_section: "S'elegeix la secció normalitzada superior", status_approved: "Aprovat", status_pending: "Pendent",
+                conductor_cobre_pvc: "Coure PVC", conductor_cobre_xlpe: "Coure XLPE",
+                calc_voltage_drop_for: "Calcular la caiguda de tensió per a:", voltage_drop: "Caiguda de Tensió (ΔV)", voltage_drop_percent: "Caiguda de tensió (%)", max_voltage_drop: "ΔV% màxima permesa", is_drop_acceptable: "Resultat", acceptable: "Correcte", not_acceptable: "Incorrecte",
+                initial_section_is: "Secció inicial", recalculating_section: "La caiguda de tensió supera el màxim. Es recalcula la secció:",
+                oversized_section: "La secció inicial compleix, però està sobredimensionada. Es recalcula per optimitzar el cost:", optimal_section: "Secció òptima final",
+                calc_max_length_for: "Calcular la longitud màxima per a:", max_length: "Longitud Màxima (L)"
+            },
+            es: {
+                main_title: "Entrenador de cálculo de Intensidad, sección y caídas de tensión",
+                student_login_title: "Acceso Alumno", teacher_login_title: "Acceso Profesor", student_select_placeholder: "-- El profesor debe cargar la lista --", student_select_loaded: "-- Selecciona tu nombre --",
+                enter_button: "Entrar", password_placeholder: "Contraseña", incorrect_password: "Contraseña incorrecta.", select_name_alert: "Por favor, selecciona tu nombre.",
+                logout_button: "Cerrar Sesión", back_button: "Volver", welcome_message: "Bienvenido/a,",
+                teacher_panel_title: "Panel del Profesor", upload_list_title: "Subir Lista de Alumnos", upload_list_desc: "Sube un archivo ODS o CSV con dos columnas: <strong>nombre</strong> y <strong>email</strong> (sin cabecera).",
+                upload_list_info: "Nota: Para ODS, asegúrate de que los datos estén en la primera hoja del archivo.", progress_report_title: "Informe de Progreso de Alumnos", table_student: "Alumno", table_email: "Email",
+                table_intensity_test: "Test de Intensidad", table_section_test: "Test de Sección", table_voltage_drop_test: "Test de Caída de Tensión", table_max_length_test: "Test de Longitud Máxima",
+                table_section_intensity_test: "Test Sección por Intensidad", table_section_both_test: "Test Sección (Ambos)", table_max_length_both_test: "Test Long. Máx. (Ambos)",
+                no_students_loaded: "No hay alumnos cargados. Por favor, sube un archivo.", students_loaded_alert: "alumnos cargados correctamente.",
+                selection_title: "Elige el tipo de ejercicio", selection_desc: "Selecciona qué parte quieres practicar.", selection_intensity: "Cálculo de Intensidad", selection_section: "Cálculo de Sección por Caída de Tensión", selection_voltage_drop: "Cálculo de Caída de Tensión", selection_max_length: "Cálculo de Longitud Máxima",
+                selection_section_intensity: "Elección de Sección por Intensidad (ITC-BT-19)", selection_section_both: "Cálculo de Sección (Intensidad y ΔV)", selection_max_length_both: "Cálculo de Longitud Máxima (Intensidad y ΔV)",
+                intensity_examples_title: "Cálculo de Intensidad (Ejemplos)", intensity_examples_desc: "Aquí tienes 10 ejercicios resueltos para que repases. Cuando estés listo, pasa al test.", start_intensity_test_button: "Empezar Test",
+                intensity_test_title: "Test de Cálculo de Intensidad", intensity_test_desc: "Calcula la intensidad (en amperios) para los siguientes 10 casos. Usa dos decimales y la coma (,) como separador.",
+                intensity_test_statement: "Línea {tipo} con una potencia de <strong>{P}W</strong> y un factor de potencia de <strong>{fp}</strong>.",
+                check_test_button: "Corregir Test",
+                section_examples_title: "Cálculo de Sección (Ejemplos)", section_examples_desc: "Aquí tienes 10 ejercicios resueltos para repasar el cálculo de secciones.", start_section_test_button: "Empezar Test",
+                section_test_title: "Test de Cálculo de Sección", section_test_desc: "Ahora calcula la sección del conductor (en mm²) y elige el valor normalizado igual o superior. Usa la coma (,) como separador decimal si es necesario.",
+                voltage_drop_examples_title: "Cálculo de Caída de Tensión (Ejemplos)", voltage_drop_examples_desc: "Aquí tienes 10 ejercicios resueltos. Calcula la caída de tensión y comprueba si es admisible.", start_voltage_drop_test_button: "Empezar Test",
+                voltage_drop_test_title: "Test de Cálculo de Caída de Tensión", voltage_drop_test_desc: "Calcula la caída de tensión (en Volts) para los siguientes 10 casos. Usa dos decimales y la coma (,) como separador.",
+                max_length_examples_title: "Cálculo de Longitud Máxima (Ejemplos)", max_length_examples_desc: "Aquí tienes 10 ejercicios resueltos donde se calcula la longitud máxima de una línea.", start_max_length_test_button: "Empezar Test",
+                max_length_test_title: "Test de Cálculo de Longitud Máxima", max_length_test_desc: "Calcula la longitud máxima (en metros) para los siguientes 10 casos. Usa dos decimales y la coma (,) como separador.",
+                section_intensity_examples_title: "Elección de Sección por Intensidad (Ejemplos)", section_intensity_examples_desc: "Aquí tienes 10 ejercicios resueltos. Elige la sección normalizada según la intensidad máxima admisible para el tipo de instalación.", start_section_intensity_test_button: "Empezar Test",
+                section_intensity_test_title: "Test de Elección de Sección por Intensidad", section_intensity_test_desc: "Elige la sección normalizada (en mm²) para los siguientes 10 casos según la ITC-BT-19.",
+                section_both_examples_title: "Cálculo de Sección por Intensidad y ΔV (Ejemplos)", section_both_examples_desc: "Aquí tienes 10 ejercicios resueltos. Calcula la sección por intensidad y por caída de tensión, y elige la mayor.", start_section_both_test_button: "Empezar Test",
+                section_both_test_title: "Test de Cálculo de Sección (Intensidad y ΔV)", section_both_test_desc: "Calcula la sección por intensidad y por caída de tensión, y elige el valor normalizado superior de la mayor.",
+                max_length_both_examples_title: "Cálculo de Longitud Máxima por Intensidad y ΔV (Ejemplos)", max_length_both_examples_desc: "Aquí tienes 10 ejercicios resueltos. Determina la sección por intensidad y después calcula la longitud máxima por caída de tensión.", start_max_length_both_test_button: "Empezar Test",
+                max_length_both_test_title: "Test de Cálculo de Longitud Máxima (Intensidad y ΔV)", max_length_both_test_desc: "Primero, elige la sección mínima por intensidad. Después, calcula la longitud máxima (en metros) para esa sección.",
+                test_passed_title: "¡Test superado!", test_passed_desc: "Has respondido correctamente a todos los ejercicios. ¡Buen trabajo!", back_to_menu_button: "Volver al menú",
+                exercise: "Ejercicio", result: "Resultado", calc_intensity_for: "Calcular la intensidad para una línea", with_power_and_pf: "con una potencia de <strong>{P}W</strong> y un factor de potencia de <strong>{fp}</strong>.",
+                line: "Línea", power: "Potencia", pf: "Factor de Potencia", intensity: "Intensidad",
+                calc_section_for: "Calcular la sección para:", system: "Sistema", power_long: "Potencia: <strong>{P}W</strong>", power_long_with_l: "Potencia: <strong>{P}W</strong>, Longitud: <strong>{L}m</strong>", conductor: "Conductor", line_type: "Tipo de línea", section: "Sección",
+                monofasica: "monofásica", trifasica: "trifásica", monofasic: "Monofásico", trifasic: "Trifásico",
+                incorrect_answers_feedback: "Algunas respuestas son incorrectas. Debes acertarlas todas para aprobar.", try_again_button: "Volver a intentar (nuevos ejercicios)", correct_answer_is: "Respuesta correcta:",
+                calculated_section: "Sección calculada (S_calc)", chosen_normalized_section: "Se elige la sección normalizada superior", status_approved: "Aprobado", status_pending: "Pendiente",
+                conductor_cobre_pvc: "Cobre PVC", conductor_cobre_xlpe: "Cobre XLPE",
+                calc_voltage_drop_for: "Calcular la caída de tensión para:", voltage_drop: "Caída de Tensión (ΔV)", voltage_drop_percent: "Caída de tensión (%)", max_voltage_drop: "ΔV% máxima permitida", is_drop_acceptable: "Resultado", acceptable: "Correcto", not_acceptable: "Incorrecto",
+                initial_section_is: "Sección inicial", recalculating_section: "La caída de tensión supera el máximo. Se recalcula la sección:",
+                oversized_section: "La sección inicial cumple, pero está sobredimensionada. Se recalcula para optimizar el coste:", optimal_section: "Sección óptima final",
+                calc_max_length_for: "Calcular la longitud máxima para:", max_length: "Longitud Máxima (L)"
+            }
+        };
+        const INSTALLATION_METHODS = {
+            ca: {
+                "B1": "Conductors aïllats o cables unipolars en tubs en parets tèrmicament aïllants",
+                "B2": "Cable multiconductor en tubs en parets tèrmicament aïllants",
+                "C": "Cable multiconductor en paret de fusta o obra",
+                "D": "Cable multiconductor enterrat en tub"
+            },
+            es: {
+                "B1": "Conductores aislados o cables unipolares en tubos en paredes térmicamente aislantes",
+                "B2": "Cable multiconductor en tubos en paredes térmicamente aislantes",
+                "C": "Cable multiconductor en pared de madera u obra",
+                "D": "Cable multiconductor enterrado en tubo"
+            }
+        };
+        const CONDUCTIVIDAD = {
+            cobre_pvc: 48.47,
+            cobre_xlpe: 45.49,
+            aluminio_pvc: 29.67,
+            aluminio_xlpe: 27.8
+        };
+        const CAIDAS_TENSION = {
+            ca: {
+                lga_total: { text: "LGA en comptadors totalment concentrats", val: 0.005 },
+                lga_parcial: { text: "LGA en comptadors parcialment concentrats", val: 0.01 },
+                di_unico: { text: "Derivació Individual en comptador únic", val: 0.015 },
+                di_total: { text: "Derivació Individual en comptadors totalment concentrats", val: 0.01 },
+                di_parcial: { text: "Derivació Individual en comptadors parcialment concentrats", val: 0.005 },
+                vivienda: { text: "Circuits interiors d'habitatges", val: 0.03 },
+                alumbrado: { text: "Circuits d'enllumenat (no habitatge)", val: 0.03 },
+                otros: { text: "Circuits interiors (no habitatge ni enllumenat)", val: 0.05 }
+            },
+            es: {
+                lga_total: { text: "LGA en contadores totalmente concentrados", val: 0.005 },
+                lga_parcial: { text: "LGA en contadores parcialmente concentrados", val: 0.01 },
+                di_unico: { text: "Derivación Individual en contador único", val: 0.015 },
+                di_total: { text: "Derivación Individual en contadores totalmente concentrados", val: 0.01 },
+                di_parcial: { text: "Derivación Individual en contadores parcialmente concentrados", val: 0.005 },
+                vivienda: { text: "Circuitos interiores de viviendas", val: 0.03 },
+                alumbrado: { text: "Circuitos de alumbrado (no vivienda)", val: 0.03 },
+                otros: { text: "Circuitos interiores (no vivienda ni alumbrado)", val: 0.05 }
+            }
+        };
+
+        let correctIntensityAnswers = [];
+        let correctSectionAnswers = [];
+        let correctVoltageDropAnswers = [];
+        let correctMaxLengthAnswers = [];
+        let correctSectionIntensityAnswers = [];
+        let correctSectionBothAnswers = [];
+        let correctMaxLengthBothAnswers = [];
+        let studentList = [];
+        let studentProgress = {};
+        let currentLanguage = 'ca';
+        let pageHistory = [];
+
+        // ===================== INICIALIZACIÓN DE LA PÁGINA =====================
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedLang = sessionStorage.getItem('language') || 'ca';
+            setLanguage(savedLang);
+            
+            loadData();
+            populateStudentDropdown();
+            
+            const fileUpload = document.getElementById('file-upload');
+            if (fileUpload) {
+                fileUpload.addEventListener('change', handleFileUpload);
+            }
+        });
+
+        function formatDecimal(num, decimals = 2) {
+            const formattedNum = Number(num.toFixed(decimals));
+            return formattedNum.toString().replace('.', ',');
+        }
+        
+        function getNormalizedSection(calculatedS, tipoCaidaKey, material) {
+            let minSection = 1.5;
+
+            if (tipoCaidaKey.startsWith('di_')) { minSection = 6; } 
+            else if (tipoCaidaKey.startsWith('lga_')) { minSection = material.includes('cobre') ? 10 : 16; }
+
+            const calculatedStandardSection = NORMALIZED_SECTIONS.find(s => s >= calculatedS) || NORMALIZED_SECTIONS[NORMALIZED_SECTIONS.length - 1];
+            
+            return Math.max(minSection, calculatedStandardSection);
+        }
+
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            sessionStorage.setItem('language', lang);
+            
+            document.documentElement.lang = lang;
+
+            document.querySelectorAll('[data-lang]').forEach(el => {
+                const key = el.dataset.lang;
+                if (translations[lang][key]) { el.innerHTML = translations[lang][key]; }
+            });
+
+            document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
+                const key = el.dataset.langPlaceholder;
+                if (translations[lang][key]) { el.placeholder = translations[lang][key]; }
+            });
+
+            document.querySelectorAll('.lang-selector button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`lang-${lang}`).classList.add('active');
+            
+            populateStudentDropdown();
+            if (document.getElementById('teacher-view').classList.contains('active')) { displayProgressReport(); }
+        }
+
+        function loadData() {
+            try {
+                const storedStudents = localStorage.getItem('studentList');
+                const storedProgress = localStorage.getItem('studentProgress');
+                
+                if (storedStudents) { studentList = JSON.parse(storedStudents); } 
+                else { studentList = defaultStudentList; saveData(); }
+
+                if (storedProgress) { studentProgress = JSON.parse(storedProgress); } 
+                else {
+                    studentList.forEach(student => {
+                        if (!studentProgress[student.nombre]) {
+                            studentProgress[student.nombre] = {
+                                email: student.email,
+                                intensityTest: translations[currentLanguage].status_pending,
+                                sectionTest: translations[currentLanguage].status_pending,
+                                voltageDropTest: translations[currentLanguage].status_pending,
+                                maxLengthTest: translations[currentLanguage].status_pending,
+                                sectionIntensityTest: translations[currentLanguage].status_pending,
+                                sectionBothTest: translations[currentLanguage].status_pending,
+                                maxLengthBothTest: translations[currentLanguage].status_pending
+                            };
+                        }
+                    });
+                    saveProgress();
+                }
+            } catch (error) {
+                console.error("Error loading data:", error); localStorage.clear(); studentList = defaultStudentList; studentProgress = {};
+                studentList.forEach(student => { studentProgress[student.nombre] = { email: student.email, intensityTest: translations[currentLanguage].status_pending, sectionTest: translations[currentLanguage].status_pending, voltageDropTest: translations[currentLanguage].status_pending, maxLengthTest: translations[currentLanguage].status_pending, sectionIntensityTest: translations[currentLanguage].status_pending, sectionBothTest: translations[currentLanguage].status_pending, maxLengthBothTest: translations[currentLanguage].status_pending }; });
+                saveData();
+            }
+        }
+
+        function saveData() {
+            try { localStorage.setItem('studentList', JSON.stringify(studentList)); saveProgress(); } 
+            catch (error) { console.error("Error saving data:", error); }
+        }
+
+        function saveProgress() {
+            try { localStorage.setItem('studentProgress', JSON.stringify(studentProgress)); } 
+            catch (error) { console.error("Error saving progress:", error); }
+        }
+
+        // ===================== LÓGICA DE LOGIN Y NAVEGACIÓN =====================
+        function login(role) {
+            if (role === 'student') {
+                const studentName = document.getElementById('student-select').value;
+                if (studentName) {
+                    sessionStorage.setItem('currentUser', studentName);
+                    document.getElementById('login-page').classList.remove('active');
+                    document.getElementById('student-view').classList.add('active');
+                    document.getElementById('student-welcome').innerText = `${translations[currentLanguage].welcome_message} ${studentName}`;
+                    startStudentSession();
+                } else { alert(translations[currentLanguage].select_name_alert); }
+            } else if (role === 'teacher') {
+                if (document.getElementById('teacher-password').value === 'Feanor') {
+                    sessionStorage.setItem('currentUser', 'Profesor');
+                    document.getElementById('login-page').classList.remove('active');
+                    document.getElementById('teacher-view').classList.add('active');
+                    document.getElementById('teacher-error').innerText = '';
+                    displayProgressReport();
+                } else { document.getElementById('teacher-error').innerText = translations.ca.incorrect_password; }
+            }
+        }
+
+        function logout() {
+            pageHistory = [];
+            sessionStorage.removeItem('currentUser');
+            window.location.reload();
+        }
+        
+        function showPage(pageId, isBack = false) {
+            const activeStudentPage = document.querySelector('.student-page.active');
+            
+            if (activeStudentPage) {
+                if (!isBack) {
+                    pageHistory.push(activeStudentPage.id);
+                }
+                activeStudentPage.classList.remove('active');
+            }
+            
+            document.getElementById(pageId).classList.add('active');
+            
+            const backButton = document.getElementById('back-button');
+            if (backButton) {
+                if (pageId === 'selection-page' || pageHistory.length === 0) {
+                    backButton.style.display = 'none';
+                } else {
+                    backButton.style.display = 'inline-block';
+                }
+            }
+        }
+
+        function goBack() {
+            if (pageHistory.length > 0) {
+                const previousPageId = pageHistory.pop();
+                showPage(previousPageId, true);
+            }
+        }
+
+        // ===================== LÓGICA DE ALUMNO =====================
+        function startStudentSession() {
+            pageHistory = [];
+            showPage('selection-page');
+        }
+
+        function startExercise(type) {
+            if (type === 'intensity') { generateIntensityExamples(); generateIntensityTest(); showPage('intensity-examples-page'); } 
+            else if (type === 'section') { generateSectionExamples(); generateSectionTest(); showPage('section-examples-page'); }
+            else if (type === 'voltage-drop') { generateVoltageDropExamples(); generateVoltageDropTest(); showPage('voltage-drop-examples-page'); }
+            else if (type === 'max-length') { generateMaxLengthExamples(); generateMaxLengthTest(); showPage('max-length-examples-page'); }
+            else if (type === 'section-intensity') { generateSectionIntensityExamples(); generateSectionIntensityTest(); showPage('section-intensity-examples-page'); }
+            else if (type === 'section-both') { generateSectionBothExamples(); generateSectionBothTest(); showPage('section-both-examples-page'); }
+            else if (type === 'max-length-both') { generateMaxLengthBothExamples(); generateMaxLengthBothTest(); showPage('max-length-both-examples-page'); }
+        }
+
+        const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const randomFloat = (min, max, decimals) => (Math.random() * (max - min) + min).toFixed(decimals);
+
+        function generateIntensityExamples() {
+            const container = document.getElementById('intensity-examples-container');
+            container.innerHTML = '';
+            const lang = currentLanguage;
+
+            for (let i = 0; i < 10; i++) {
+                const isMonofasica = Math.random() > 0.5;
+                const maxPower = isMonofasica ? 14690 : 25000;
+                const P = randomInt(1000, maxPower);
+                const fp = parseFloat(randomFloat(0.7, 1.0, 2));
+                
+                let I, V, tipo, formula, calculo;
+                if (isMonofasica) { tipo = translations[lang].monofasica; V = V_MONOFASICA; I = P / (V * fp); formula = `I = P / (V * cos φ)`; calculo = `I = ${P}W / (${V}V * ${fp}) = ${formatDecimal(I)} A`; } 
+                else { tipo = translations[lang].trifasica; V = V_TRIFASICA; I = P / (SQRT3 * V * fp); formula = `I = P / (√3 * V * cos φ)`; calculo = `I = ${P}W / (1,732 * ${V}V * ${fp}) = ${formatDecimal(I)} A`; }
+                
+                const desc = translations[lang].with_power_and_pf.replace('{P}', P).replace('{fp}', fp);
+                container.innerHTML += `<div class="exercise-card"><p><strong>${translations[lang].exercise} ${i + 1}:</strong> ${translations[lang].calc_intensity_for} ${tipo} ${desc}</p><p class="formula">${formula}</p><p class="explanation">${calculo}</p><p class="result">${translations[lang].result}: ${formatDecimal(I)} A</p></div>`;
+            }
+        }
+
+        function generateIntensityTest() {
+            const container = document.getElementById('intensity-test-container');
+            container.innerHTML = '';
+            correctIntensityAnswers = [];
+            document.getElementById('intensity-test-error').innerText = '';
+            const lang = currentLanguage;
+
+            for (let i = 0; i < 10; i++) {
+                const isMonofasica = Math.random() > 0.5;
+                const maxPower = isMonofasica ? 14690 : 25000;
+                const P = randomInt(1000, maxPower);
+                const fp = parseFloat(randomFloat(0.7, 1.0, 2));
+                
+                let I, V, tipo;
+                if (isMonofasica) { tipo = translations[lang].monofasica; V = V_MONOFASICA; I = P / (V * fp); } 
+                else { tipo = translations[lang].trifasica; V = V_TRIFASICA; I = P / (SQRT3 * V * fp); }
+                correctIntensityAnswers.push(I.toFixed(2));
+                container.innerHTML += `<div class="exercise-card"><p><strong>${i + 1}:</strong> ${translations[lang].intensity_test_statement.replace('{tipo}', tipo).replace('{P}', P).replace('{fp}', fp)}</p><label>${translations[lang].intensity} (A): <input type="text" id="intensity-q${i}"></label></div>`;
+            }
+            document.getElementById('intensity-test-buttons').innerHTML = `<button onclick="checkIntensityAnswers()">${translations[lang].check_test_button}</button>`;
+        }
+
+        function checkIntensityAnswers() {
+            let allCorrect = true;
+            const lang = currentLanguage;
+            document.querySelectorAll('#intensity-test-container .exercise-card').forEach((card, i) => {
+                const oldCorrection = card.querySelector('.correction-result');
+                if (oldCorrection) oldCorrection.remove();
+                const inputElement = document.getElementById(`intensity-q${i}`);
+                const userInput = inputElement.value.trim().replace(',', '.');
+                inputElement.classList.remove('correct', 'incorrect');
+                if (userInput !== '' && !isNaN(userInput) && parseFloat(userInput).toFixed(2) === correctIntensityAnswers[i]) { inputElement.classList.add('correct'); } else { allCorrect = false; inputElement.classList.add('incorrect'); const correctionEl = document.createElement('p'); correctionEl.className = 'correction-result'; correctionEl.innerHTML = `${translations[lang].correct_answer_is} <strong class="result">${formatDecimal(parseFloat(correctIntensityAnswers[i]))} A</strong>`; card.appendChild(correctionEl); }
+            });
+            
+            if (allCorrect) {
+                const studentName = sessionStorage.getItem('currentUser');
+                if (studentProgress[studentName]) { studentProgress[studentName].intensityTest = translations[lang].status_approved; saveProgress(); }
+                showPage('final-page');
+            } else {
+                document.getElementById('intensity-test-error').innerText = translations[lang].incorrect_answers_feedback;
+                document.getElementById('intensity-test-buttons').innerHTML = `<button onclick="generateIntensityTest()">${translations[lang].try_again_button}</button>`;
+            }
+        }
+
+        function generateSectionExamples() {
+            const container = document.getElementById('section-examples-container');
+            container.innerHTML = '';
+            const lang = currentLanguage;
+            for (let i = 0; i < 10; i++) {
+                const { isMonofasica, powerLongText, conductorText, caidaPorc, formula, calculo, S_norm } = generateSectionExerciseData(lang);
+                container.innerHTML += `<div class="exercise-card"><p><strong>${translations[lang].exercise} ${i + 1}:</strong> ${translations[lang].calc_section_for}</p><ul><li>${translations[lang].system}: <strong>${isMonofasica ? translations[lang].monofasic : translations[lang].trifasic}</strong></li><li>${powerLongText}</li><li>${translations[lang].conductor}: <strong>${conductorText}</strong></li><li>${translations[lang].line_type}: <strong>${caidaPorc.text}</strong></li></ul><p class="formula">${formula}</p><p class="explanation">${calculo}</p><p class="explanation">${translations[lang].chosen_normalized_section}:</p><p class="result">${S_norm.toString().replace('.',',')} mm²</p></div>`;
+            }
+        }
+
+        function generateSectionTest() {
+            const container = document.getElementById('section-test-container');
+            container.innerHTML = '';
+            correctSectionAnswers = [];
+            document.getElementById('section-test-error').innerText = '';
+            const lang = currentLanguage;
+            for (let i = 0; i < 10; i++) {
+                const { isMonofasica, powerLongText, conductorText, caidaPorc, S_norm } = generateSectionExerciseData(lang);
+                correctSectionAnswers.push(S_norm.toString());
+                container.innerHTML += `<div class="exercise-card"><p><strong>${i + 1}:</strong> ${translations[lang].calc_section_for}</p><ul><li>${translations[lang].system}: <strong>${isMonofasica ? translations[lang].monofasic : translations[lang].trifasic}</strong></li><li>${powerLongText}</li><li>${translations[lang].conductor}: <strong>${conductorText}</strong></li><li>${translations[lang].line_type}: <strong>${caidaPorc.text}</strong></li></ul><label>${translations[lang].section} (mm²): <input type="text" id="section-q${i}"></label></div>`;
+            }
+            document.getElementById('section-test-buttons').innerHTML = `<button onclick="checkSectionAnswers()">${translations[lang].check_test_button}</button>`;
+        }
+        
+        function generateSectionExerciseData(lang) {
+            const material = "cobre";
+			const insulation = Math.random() > 0.5 ? "pvc" : "xlpe";
+            const tiposCaida = Object.keys(CAIDAS_TENSION[lang]);
+            let P, L, tipoCaidaKey, isMonofasica;
+
+            tipoCaidaKey = tiposCaida[randomInt(0, tiposCaida.length - 1)];
+            isMonofasica = tipoCaidaKey.startsWith('lga_') ? false : (Math.random() > 0.5);
+            const maxPower = isMonofasica ? 14690 : 25000;
+            P = randomInt(2000, maxPower);
+            L = randomInt(10, 200);
+
+            const conductividad = CONDUCTIVIDAD[`${material}_${insulation}`];
+            const caidaPorc = CAIDAS_TENSION[lang][tipoCaidaKey];
+            let S_calc, S_norm, V, caidaAbs, formula, calculo;
+            if (isMonofasica) { V = V_MONOFASICA; caidaAbs = V * caidaPorc.val; S_calc = (2 * P * L) / (conductividad * caidaAbs * V); formula = `S = (2 ⋅ P ⋅ L) / (γ ⋅ ΔV ⋅ V)`; calculo = `ΔV = ${V}V ⋅ ${caidaPorc.val} = ${formatDecimal(caidaAbs, 3)}V<br>S = (2 ⋅ ${P} ⋅ ${L}) / (${conductividad} ⋅ ${formatDecimal(caidaAbs, 3)} ⋅ ${V}) = ${formatDecimal(S_calc)} mm²`; } 
+            else { V = V_TRIFASICA; caidaAbs = V * caidaPorc.val; S_calc = (P * L) / (conductividad * caidaAbs * V); formula = `S = (P ⋅ L) / (γ ⋅ ΔV ⋅ V)`; calculo = `ΔV = ${V}V ⋅ ${caidaPorc.val} = ${formatDecimal(caidaAbs, 3)}V<br>S = (${P} ⋅ ${L}) / (${conductividad} ⋅ ${formatDecimal(caidaAbs, 3)} ⋅ ${V}) = ${formatDecimal(S_calc)} mm²`; }
+            S_norm = getNormalizedSection(S_calc, tipoCaidaKey, material);
+
+            return { isMonofasica, powerLongText: translations[lang].power_long_with_l.replace('{P}', P).replace('{L}', L), conductorText: translations[lang][`conductor_${material}_${insulation}`], caidaPorc, S_norm, formula, calculo };
+        }
+
+        function checkSectionAnswers() {
+            let allCorrect = true;
+            const lang = currentLanguage;
+            document.querySelectorAll('#section-test-container .exercise-card').forEach((card, i) => {
+                const oldCorrection = card.querySelector('.correction-result');
+                if (oldCorrection) oldCorrection.remove();
+                const inputElement = document.getElementById(`section-q${i}`);
+                const userInput = inputElement.value.trim().replace(',', '.');
+                inputElement.classList.remove('correct', 'incorrect');
+                if (userInput !== '' && !isNaN(userInput) && parseFloat(userInput).toString() === correctSectionAnswers[i]) { inputElement.classList.add('correct'); } else { allCorrect = false; inputElement.classList.add('incorrect'); const correctionEl = document.createElement('p'); correctionEl.className = 'correction-result'; correctionEl.innerHTML = `${translations[lang].correct_answer_is} <strong class="result">${correctSectionAnswers[i].replace('.', ',')} mm²</strong>`; card.appendChild(correctionEl); }
+            });
+            
+            if (allCorrect) {
+                const studentName = sessionStorage.getItem('currentUser');
+                if(studentProgress[studentName]){ studentProgress[studentName].sectionTest = translations[lang].status_approved; saveProgress(); }
+                showPage('final-page');
+            } else {
+                document.getElementById('section-test-error').innerText = translations[lang].incorrect_answers_feedback;
+                document.getElementById('section-test-buttons').innerHTML = `<button onclick="generateSectionTest()">${translations[lang].try_again_button}</button>`;
+            }
+        }
+        
+        function generateVoltageDropExamples() {
+             const container = document.getElementById('voltage-drop-examples-container');
+             container.innerHTML = '';
+             const lang = currentLanguage;
+             for (let i = 0; i < 10; i++) {
+                 const data = generateVoltageDropExerciseData(lang);
+                 const { P, isMonofasica, caidaPorc, conductorText, powerLongText, S_initial, dropV_initial, dropPercent_initial, isAcceptable, S_norm_recalculated, formula_recalc, calculo_recalc, isOversized, S_norm_optimal, formula_optimal, calculo_optimal } = data;
+
+                 let formula, calculo;
+                 const conductividad = CONDUCTIVIDAD[data.materialKey];
+                 const V = isMonofasica ? V_MONOFASICA : V_TRIFASICA;
+                 if (isMonofasica) {
+                     formula = `ΔV = (2 ⋅ P ⋅ L) / (γ ⋅ S ⋅ V)`;
+                     calculo = `ΔV = (2 ⋅ ${P} ⋅ ${data.L}) / (${conductividad} ⋅ ${S_initial} ⋅ ${V}) = ${formatDecimal(dropV_initial)} V`;
+                 } else {
+                     formula = `ΔV = (P ⋅ L) / (γ ⋅ S ⋅ V)`;
+                     calculo = `ΔV = (${P} ⋅ ${data.L}) / (${conductividad} ⋅ ${S_initial} ⋅ ${V}) = ${formatDecimal(dropV_initial)} V`;
+                 }
+
+                 let explanationHTML = `<p class="formula">${formula}</p><p class="explanation">${calculo}</p><p class="explanation">${translations[lang].voltage_drop_percent}: ${formatDecimal(dropPercent_initial)}%</p><p class="explanation">${translations[lang].max_voltage_drop}: ${formatDecimal(caidaPorc.val * 100)}%</p>`;
+                 let resultHTML = '';
+
+                 if (isAcceptable) {
+                     explanationHTML += `<p class="explanation result">${translations[lang].is_drop_acceptable}: ${translations[lang].acceptable}</p>`;
+                     if(isOversized) {
+                         explanationHTML += `<p class="explanation incorrect-result">${translations[lang].oversized_section}</p>`;
+                         explanationHTML += `<p class="formula">${formula_optimal}</p><p class="explanation">${calculo_optimal}</p>`;
+                         resultHTML = `<p class="result optimal-result">${translations[lang].optimal_section}: ${S_norm_optimal.toString().replace('.',',')} mm²</p>`;
+                     }
+                 } else {
+                     explanationHTML += `<p class="explanation incorrect-result">${translations[lang].recalculating_section}</p>`;
+                     explanationHTML += `<p class="formula">${formula_recalc}</p><p class="explanation">${calculo_recalc}</p>`;
+                     resultHTML = `<p class="result">${translations[lang].chosen_normalized_section}: ${S_norm_recalculated.toString().replace('.',',')} mm²</p>`;
+                 }
+                 
+                 container.innerHTML += `<div class="exercise-card"><p><strong>${translations[lang].exercise} ${i + 1}:</strong> ${translations[lang].calc_voltage_drop_for}</p><ul><li>${translations[lang].system}: <strong>${isMonofasica ? translations[lang].monofasic : translations[lang].trifasic}</strong></li><li>${powerLongText}</li><li>${translations[lang].conductor}: <strong>${conductorText}</strong></li><li>${translations[lang].initial_section_is}: <strong>${S_initial} mm²</strong></li><li>${translations[lang].line_type}: <strong>${caidaPorc.text}</strong></li></ul>${explanationHTML}${resultHTML}</div>`;
+             }
+        }
+
+        function generateVoltageDropTest() {
+            const container = document.getElementById('voltage-drop-test-container');
+            container.innerHTML = '';
+            correctVoltageDropAnswers = [];
+            document.getElementById('voltage-drop-test-error').innerText = '';
+            const lang = currentLanguage;
+            for (let i = 0; i < 10; i++) {
+                const { isMonofasica, powerLongText, conductorText, S_initial, caidaPorc, dropV_initial } = generateVoltageDropExerciseData(lang);
+                correctVoltageDropAnswers.push(dropV_initial.toFixed(2));
+                container.innerHTML += `<div class="exercise-card"><p><strong>${i + 1}:</strong> ${translations[lang].calc_voltage_drop_for}</p><ul><li>${translations[lang].system}: <strong>${isMonofasica ? translations[lang].monofasic : translations[lang].trifasic}</strong></li><li>${powerLongText}</li><li>${translations[lang].conductor}: <strong>${conductorText}</strong></li><li>${translations[lang].section}: <strong>${S_initial} mm²</strong></li><li>${translations[lang].line_type}: <strong>${caidaPorc.text}</strong></li></ul><label>${translations[lang].voltage_drop} (V): <input type="text" id="voltagedrop-q${i}"></label></div>`;
+            }
+            document.getElementById('voltage-drop-test-buttons').innerHTML = `<button onclick="checkVoltageDropAnswers()">${translations[lang].check_test_button}</button>`;
+        }
+
+        function checkVoltageDropAnswers() {
+            let allCorrect = true;
+            const lang = currentLanguage;
+            document.querySelectorAll('#voltage-drop-test-container .exercise-card').forEach((card, i) => {
+                const oldCorrection = card.querySelector('.correction-result');
+                if (oldCorrection) oldCorrection.remove();
+                const inputElement = document.getElementById(`voltagedrop-q${i}`);
+                const userInput = inputElement.value.trim().replace(',', '.');
+                inputElement.classList.remove('correct', 'incorrect');
+                if (userInput !== '' && !isNaN(userInput) && parseFloat(userInput).toFixed(2) === correctVoltageDropAnswers[i]) {
+                    inputElement.classList.add('correct');
+                } else {
+                    allCorrect = false;
+                    inputElement.classList.add('incorrect');
+                    const correctionEl = document.createElement('p');
+                    correctionEl.className = 'correction-result';
+                    correctionEl.innerHTML = `${translations[lang].correct_answer_is} <strong class="result">${formatDecimal(parseFloat(correctVoltageDropAnswers[i]))} V</strong>`;
+                    card.appendChild(correctionEl);
+                }
+            });
+
+            if (allCorrect) {
+                const studentName = sessionStorage.getItem('currentUser');
+                if(studentProgress[studentName]){ studentProgress[studentName].voltageDropTest = translations[lang].status_approved; saveProgress(); }
+                showPage('final-page');
+            } else {
+                document.getElementById('voltage-drop-test-error').innerText = translations[lang].incorrect_answers_feedback;
+                document.getElementById('voltage-drop-test-buttons').innerHTML = `<button onclick="generateVoltageDropTest()">${translations[lang].try_again_button}</button>`;
+            }
+        }
+        
+        function generateVoltageDropExerciseData(lang) {
+            const material = "cobre";
+			const insulation = Math.random() > 0.5 ? "pvc" : "xlpe";
+			const materialKey = `${material}_${insulation}`;
+            const tiposCaida = Object.keys(CAIDAS_TENSION[lang]);
+            let P, L, tipoCaidaKey, isMonofasica, S_initial;
+            
+            tipoCaidaKey = tiposCaida[randomInt(0, tiposCaida.length - 1)];
+            isMonofasica = tipoCaidaKey.startsWith('lga_') ? false : (Math.random() > 0.5);
+            const maxPower = isMonofasica ? 14690 : 25000;
+            P = randomInt(2000, maxPower);
+            L = randomInt(10, 200);
+            
+            let minSection = 1.5;
+            if (tipoCaidaKey.startsWith('di_')) { minSection = 6; }
+            else if (tipoCaidaKey.startsWith('lga_')) { minSection = 10; }
+
+            const possibleSections = NORMALIZED_SECTIONS.filter(s => s >= minSection);
+            S_initial = possibleSections[randomInt(0, possibleSections.length - 1)];
+
+            const conductividad = CONDUCTIVIDAD[materialKey];
+            const caidaPorc = CAIDAS_TENSION[lang][tipoCaidaKey];
+            let V, dropV_initial, S_calc_recalculated, S_norm_recalculated, formula_recalc, calculo_recalc, isOversized = false, S_norm_optimal, formula_optimal, calculo_optimal;
+            if (isMonofasica) { V = V_MONOFASICA; dropV_initial = (2 * P * L) / (conductividad * S_initial * V); } 
+            else { V = V_TRIFASICA; dropV_initial = (P * L) / (conductividad * S_initial * V); }
+            
+            const dropPercent_initial = (dropV_initial / V) * 100;
+            const isAcceptable = dropPercent_initial <= (caidaPorc.val * 100);
+
+            const caidaAbs = V * caidaPorc.val;
+            let S_calc_min;
+            if (isMonofasica) { 
+                S_calc_min = (2 * P * L) / (conductividad * caidaAbs * V);
+                formula_optimal = `S = (2 ⋅ P ⋅ L) / (γ ⋅ ΔV ⋅ V)`;
+                calculo_optimal = `ΔV = ${V}V ⋅ ${caidaPorc.val} = ${formatDecimal(caidaAbs, 3)}V<br>S = (2 ⋅ ${P} ⋅ ${L}) / (${conductividad} ⋅ ${formatDecimal(caidaAbs, 3)} ⋅ ${V}) = ${formatDecimal(S_calc_min)} mm²`;
+            } else { 
+                S_calc_min = (P * L) / (conductividad * caidaAbs * V); 
+                formula_optimal = `S = (P ⋅ L) / (γ ⋅ ΔV ⋅ V)`;
+                calculo_optimal = `ΔV = ${V}V ⋅ ${caidaPorc.val} = ${formatDecimal(caidaAbs, 3)}V<br>S = (${P} ⋅ ${L}) / (${conductividad} ⋅ ${formatDecimal(caidaAbs, 3)} ⋅ ${V}) = ${formatDecimal(S_calc_min)} mm²`;
+            }
+            S_norm_optimal = getNormalizedSection(S_calc_min, tipoCaidaKey, material);
+
+            if (isAcceptable) {
+                if (S_initial > S_norm_optimal) {
+                    isOversized = true;
+                }
+            } else {
+                S_calc_recalculated = S_calc_min;
+                formula_recalc = formula_optimal;
+                calculo_recalc = calculo_optimal;
+                S_norm_recalculated = S_norm_optimal;
+            }
+
+            return { P, L, S_initial, materialKey, tipoCaidaKey, isMonofasica, caidaPorc, conductorText: translations[lang][`conductor_${materialKey}`], powerLongText: translations[lang].power_long_with_l.replace('{P}', P).replace('{L}', L), V, dropV_initial, dropPercent_initial, isAcceptable, S_norm_recalculated, formula_recalc, calculo_recalc, isOversized, S_norm_optimal, formula_optimal, calculo_optimal };
+        }
+        
+        function generateMaxLengthExamples() {
+            const container = document.getElementById('max-length-examples-container');
+            container.innerHTML = '';
+            const lang = currentLanguage;
+            for (let i = 0; i < 10; i++) {
+                const { P, S, materialKey, tipoCaidaKey, isMonofasica, caidaPorc, conductorText, powerLongText, L_max, formula, calculo } = generateMaxLengthExerciseData(lang);
+                container.innerHTML += `<div class="exercise-card"><p><strong>${translations[lang].exercise} ${i + 1}:</strong> ${translations[lang].calc_max_length_for}</p><ul><li>${translations[lang].system}: <strong>${isMonofasica ? translations[lang].monofasic : translations[lang].trifasic}</strong></li><li>${powerLongText}</li><li>${translations[lang].conductor}: <strong>${conductorText}</strong></li><li>${translations[lang].section}: <strong>${S} mm²</strong></li><li>${translations[lang].line_type}: <strong>${caidaPorc.text}</strong></li></ul><p class="formula">${formula}</p><p class="explanation">${calculo}</p><p class="result">${translations[lang].max_length}: ${formatDecimal(L_max)} m</p></div>`;
+            }
+        }
+        
+        function generateMaxLengthTest() {
+            const container = document.getElementById('max-length-test-container');
+            container.innerHTML = '';
+            correctMaxLengthAnswers = [];
+            document.getElementById('max-length-test-error').innerText = '';
+            const lang = currentLanguage;
+            for (let i = 0; i < 10; i++) {
+                const { P, S, materialKey, tipoCaidaKey, isMonofasica, caidaPorc, conductorText, powerLongText, L_max } = generateMaxLengthExerciseData(lang);
+                correctMaxLengthAnswers.push(L_max.toFixed(2));
+                container.innerHTML += `<div class="exercise-card"><p><strong>${i + 1}:</strong> ${translations[lang].calc_max_length_for}</p><ul><li>${translations[lang].system}: <strong>${isMonofasica ? translations[lang].monofasic : translations[lang].trifasic}</strong></li><li>${powerLongText}</li><li>${translations[lang].conductor}: <strong>${conductorText}</strong></li><li>${translations[lang].section}: <strong>${S} mm²</strong></li><li>${translations[lang].line_type}: <strong>${caidaPorc.text}</strong></li></ul><label>${translations[lang].max_length} (m): <input type="text" id="maxlength-q${i}"></label></div>`;
+            }
+            document.getElementById('max-length-test-buttons').innerHTML = `<button onclick="checkMaxLengthAnswers()">${translations[lang].check_test_button}</button>`;
+        }
+        
+        function checkMaxLengthAnswers() {
+            let allCorrect = true;
+            const lang = currentLanguage;
+            document.querySelectorAll('#max-length-test-container .exercise-card').forEach((card, i) => {
+                const oldCorrection = card.querySelector('.correction-result');
+                if (oldCorrection) oldCorrection.remove();
+                const inputElement = document.getElementById(`maxlength-q${i}`);
+                const userInput = inputElement.value.trim().replace(',', '.');
+                inputElement.classList.remove('correct', 'incorrect');
+                if (userInput !== '' && !isNaN(userInput) && parseFloat(userInput).toFixed(2) === correctMaxLengthAnswers[i]) {
+                    inputElement.classList.add('correct');
+                } else {
+                    allCorrect = false;
+                    inputElement.classList.add('incorrect');
+                    const correctionEl = document.createElement('p');
+                    correctionEl.className = 'correction-result';
+                    correctionEl.innerHTML = `${translations[lang].correct_answer_is} <strong class="result">${formatDecimal(parseFloat(correctMaxLengthAnswers[i]))} m</strong>`;
+                    card.appendChild(correctionEl);
+                }
+            });
+
+            if (allCorrect) {
+                const studentName = sessionStorage.getItem('currentUser');
+                if(studentProgress[studentName]){ studentProgress[studentName].maxLengthTest = translations[lang].status_approved; saveProgress(); }
+                showPage('final-page');
+            } else {
+                document.getElementById('max-length-test-error').innerText = translations[lang].incorrect_answers_feedback;
+                document.getElementById('max-length-test-buttons').innerHTML = `<button onclick="generateMaxLengthTest()">${translations[lang].try_again_button}</button>`;
+            }
+        }
+        
+        function generateMaxLengthExerciseData(lang) {
+            const material = "cobre";
+			const insulation = Math.random() > 0.5 ? "pvc" : "xlpe";
+			const materialKey = `${material}_${insulation}`;
+            const tiposCaida = Object.keys(CAIDAS_TENSION[lang]);
+            let P, tipoCaidaKey, isMonofasica, S, L_max, formula, calculo, V, caidaAbs, conductividad, caidaPorc;
+
+            do {
+                tipoCaidaKey = tiposCaida[randomInt(0, tiposCaida.length - 1)];
+                isMonofasica = tipoCaidaKey.startsWith('lga_') ? false : (Math.random() > 0.5);
+                const maxPower = isMonofasica ? 14690 : 25000;
+                P = randomInt(2000, maxPower);
+                
+                let minSection = 1.5;
+                if (tipoCaidaKey.startsWith('di_')) { minSection = 6; }
+                else if (tipoCaidaKey.startsWith('lga_')) { minSection = 10; }
+
+                const possibleSections = NORMALIZED_SECTIONS.filter(s => s >= minSection);
+                S = possibleSections[randomInt(0, possibleSections.length - 1)];
+
+                conductividad = CONDUCTIVIDAD[materialKey];
+                caidaPorc = CAIDAS_TENSION[lang][tipoCaidaKey];
+                
+                if (isMonofasica) { 
+                    V = V_MONOFASICA; 
+                    caidaAbs = V * caidaPorc.val;
+                    L_max = (caidaAbs * conductividad * S * V) / (2 * P);
+                    formula = `L = (ΔV ⋅ γ ⋅ S ⋅ V) / (2 ⋅ P)`;
+                    calculo = `ΔV = ${V}V ⋅ ${caidaPorc.val} = ${formatDecimal(caidaAbs, 3)}V<br>L = (${formatDecimal(caidaAbs, 3)} ⋅ ${conductividad} ⋅ ${S} ⋅ ${V}) / (2 ⋅ ${P}) = ${formatDecimal(L_max)} m`;
+                } else { 
+                    V = V_TRIFASICA; 
+                    caidaAbs = V * caidaPorc.val;
+                    L_max = (caidaAbs * conductividad * S * V) / P;
+                    formula = `L = (ΔV ⋅ γ ⋅ S ⋅ V) / P`;
+                    calculo = `ΔV = ${V}V ⋅ ${caidaPorc.val} = ${formatDecimal(caidaAbs, 3)}V<br>L = (${formatDecimal(caidaAbs, 3)} ⋅ ${conductividad} ⋅ ${S} ⋅ ${V}) / ${P} = ${formatDecimal(L_max)} m`;
+                }
+            } while (L_max > 200);
+
+            return { P, S, materialKey, tipoCaidaKey, isMonofasica, caidaPorc, conductorText: translations[lang][`conductor_${materialKey}`], powerLongText: translations[lang].power_long.replace('{P}', P), L_max, formula, calculo };
+        }
+
+        // Funciones para el nuevo bloque de Sección por Intensidad
+        function getSectionByIntensity(intensity, material = 'cobre', insulation = 'pvc', method = 'B1') {
+			const table = AMPACIDAD_ITC_BT_19[material]?.[insulation]?.[method];
+			if (!table) {
+				console.error(`Table not found for: ${material}, ${insulation}, ${method}`);
+				return NORMALIZED_SECTIONS[NORMALIZED_SECTIONS.length - 1];
+			}
+
+			for (const section in table) {
+				if (table[section] >= intensity) {
+					return parseFloat(section);
+				}
+			}
+			return NORMALIZED_SECTIONS[NORMALIZED_SECTIONS.length - 1];
+		}
+
+
+		function generateSectionIntensityExerciseData(lang) {
+			const isMonofasica = Math.random() > 0.5;
+			const maxPower = isMonofasica ? 14690 : 25000;
+			const P = randomInt(1000, maxPower);
+			const fp = parseFloat(randomFloat(0.7, 1.0, 2));
+			
+			const material = "cobre";
+			const insulation = Math.random() > 0.5 ? "pvc" : "xlpe";
+			const methods = Object.keys(AMPACIDAD_ITC_BT_19[material][insulation]);
+			const method = methods[randomInt(0, methods.length - 1)];
+
+			let I, V, tipo;
+			if (isMonofasica) {
+				tipo = translations[lang].monofasica;
+				V = V_MONOFASICA;
+				I = P / (V * fp);
+			} else {
+				tipo = translations[lang].trifasica;
+				V = V_TRIFASICA;
+				I = P / (SQRT3 * V * fp);
+			}
+
+			const S_norm = getSectionByIntensity(I, material, insulation, method);
+			const I_adm = AMPACIDAD_ITC_BT_19[material][insulation][method][S_norm];
+
+			const powerText = translations[lang].with_power_and_pf.replace('{P}', P).replace('{fp}', fp);
+			const installation_text = `Tipus d'instal·lació: <strong>${INSTALLATION_METHODS[lang][method]} (${method})</strong>, Aïllament: <strong>${insulation.toUpperCase()}</strong>`;
+			
+            const numConductors = isMonofasica ? 2 : 3;
+            const conductor_text_ca = `${numConductors} conductors carregats`;
+            const conductor_text_es = `${numConductors} conductores cargados`;
+
+			const calculo_ca = `<b>1. Classificació:</b><br>Tipus d'instal·lació: <strong>${method}</strong>.<br>Aïllament: <strong>${insulation.toUpperCase()}</strong>.<br>Sistema: ${tipo} (${conductor_text_ca}).<br><br><b>2. Càlcul d'intensitat:</b><br>I = ${formatDecimal(I)} A.<br><br><b>3. Selecció de secció:</b><br>Consultant la taula de la ITC-BT-19 per a instal·lacions <strong>${method}</strong> amb aïllament <strong>${insulation.toUpperCase()}</strong> i ${conductor_text_ca}, la primera secció normalitzada que suporta una intensitat igual o superior a ${formatDecimal(I)} A és <strong>${S_norm} mm²</strong> (I_adm = ${I_adm} A).`;
+			const calculo_es = `<b>1. Clasificación:</b><br>Tipo de instalación: <strong>${method}</strong>.<br>Aislamiento: <strong>${insulation.toUpperCase()}</strong>.<br>Sistema: ${tipo} (${conductor_text_es}).<br><br><b>2. Cálculo de intensidad:</b><br>I = ${formatDecimal(I)} A.<br><br><b>3. Selección de sección:</b><br>Consultando la tabla de la ITC-BT-19 para instalaciones <strong>${method}</strong> con aislamiento <strong>${insulation.toUpperCase()}</strong> y ${conductor_text_es}, la primera sección normalizada que soporta una intensidad igual o superior a ${formatDecimal(I)} A es <strong>${S_norm} mm²</strong> (I_adm = ${I_adm} A).`;
+
+			return {
+				tipo,
+				powerText,
+				installation_text,
+				S_norm,
+				calculo: lang === 'ca' ? calculo_ca : calculo_es
+			};
+		}
+
+
+        function generateSectionIntensityExamples() {
+            const container = document.getElementById('section-intensity-examples-container');
+            container.innerHTML = '';
+            const lang = currentLanguage;
+
+            for (let i = 0; i < 10; i++) {
+                const { tipo, powerText, installation_text, S_norm, calculo } = generateSectionIntensityExerciseData(lang);
+				container.innerHTML += `<div class="exercise-card"><p><strong>${translations[lang].exercise} ${i + 1}:</strong> ${translations[lang].calc_intensity_for} ${tipo} ${powerText}</p><p>${installation_text}</p><p class="explanation">${calculo}</p><p class="result">${translations[lang].result}: ${S_norm.toString().replace('.',',')} mm²</p></div>`;
+            }
+        }
+
+        function generateSectionIntensityTest() {
+            const container = document.getElementById('section-intensity-test-container');
+            container.innerHTML = '';
+            correctSectionIntensityAnswers = [];
+            document.getElementById('section-intensity-test-error').innerText = '';
+            const lang = currentLanguage;
+
+            for (let i = 0; i < 10; i++) {
+                const { tipo, powerText, installation_text, S_norm } = generateSectionIntensityExerciseData(lang);
+                correctSectionIntensityAnswers.push(S_norm.toString());
+                container.innerHTML += `<div class="exercise-card"><p><strong>${i + 1}:</strong> ${translations[lang].calc_intensity_for} ${tipo} ${powerText}</p><p>${installation_text}</p><label>${translations[lang].section} (mm²): <input type="text" id="section-intensity-q${i}"></label></div>`;
+            }
+            document.getElementById('section-intensity-test-buttons').innerHTML = `<button onclick="checkSectionIntensityAnswers()">${translations[lang].check_test_button}</button>`;
+        }
+
+        function checkSectionIntensityAnswers() {
+            let allCorrect = true;
+            const lang = currentLanguage;
+            document.querySelectorAll('#section-intensity-test-container .exercise-card').forEach((card, i) => {
+                const oldCorrection = card.querySelector('.correction-result');
+                if (oldCorrection) oldCorrection.remove();
+                const inputElement = document.getElementById(`section-intensity-q${i}`);
+                const userInput = inputElement.value.trim().replace(',', '.');
+                inputElement.classList.remove('correct', 'incorrect');
+                if (userInput !== '' && !isNaN(userInput) && parseFloat(userInput).toString() === correctSectionIntensityAnswers[i]) {
+                    inputElement.classList.add('correct');
+                } else {
+                    allCorrect = false;
+                    inputElement.classList.add('incorrect');
+                    const correctionEl = document.createElement('p');
+                    correctionEl.className = 'correction-result';
+                    correctionEl.innerHTML = `${translations[lang].correct_answer_is} <strong class="result">${correctSectionIntensityAnswers[i].replace('.', ',')} mm²</strong>`;
+                    card.appendChild(correctionEl);
+                }
+            });
+
+            if (allCorrect) {
+                const studentName = sessionStorage.getItem('currentUser');
+                if(studentProgress[studentName]){ studentProgress[studentName].sectionIntensityTest = translations[lang].status_approved; saveProgress(); }
+                showPage('final-page');
+            } else {
+                document.getElementById('section-intensity-test-error').innerText = translations[lang].incorrect_answers_feedback;
+                document.getElementById('section-intensity-test-buttons').innerHTML = `<button onclick="generateSectionIntensityTest()">${translations[lang].try_again_button}</button>`;
+            }
+        }
+
+        function generateSectionBothExerciseData(lang) {
+            const tiposCaida = Object.keys(CAIDAS_TENSION[lang]);
+            let P, L, tipoCaidaKey, isMonofasica, fp, material, insulation, method;
+            
+			material = "cobre";
+			insulation = Math.random() > 0.5 ? "pvc" : "xlpe";
+			const methods = Object.keys(AMPACIDAD_ITC_BT_19[material][insulation]);
+			method = methods[randomInt(0, methods.length - 1)];
+
+            tipoCaidaKey = tiposCaida[randomInt(0, tiposCaida.length - 1)];
+            isMonofasica = tipoCaidaKey.startsWith('lga_') ? false : (Math.random() > 0.5);
+            const maxPower = isMonofasica ? 14690 : 25000;
+            P = randomInt(2000, maxPower);
+            L = randomInt(10, 200);
+            fp = parseFloat(randomFloat(0.7, 1.0, 2));
+
+            let I, V;
+            if (isMonofasica) {
+                V = V_MONOFASICA;
+                I = P / (V * fp);
+            } else {
+                V = V_TRIFASICA;
+                I = P / (SQRT3 * V * fp);
+            }
+            const S_i = getSectionByIntensity(I, material, insulation, method);
+
+            const conductividad = CONDUCTIVIDAD[`${material}_${insulation}`];
+            const caidaPorc = CAIDAS_TENSION[lang][tipoCaidaKey];
+            let S_vd;
+            const caidaAbs = V * caidaPorc.val;
+            if (isMonofasica) {
+                S_vd = (2 * P * L) / (conductividad * caidaAbs * V);
+            } else {
+                S_vd = (P * L) / (conductividad * caidaAbs * V);
+            }
+
+            const S_final_calc = Math.max(S_vd, S_i);
+            const S_norm = getNormalizedSection(S_final_calc, tipoCaidaKey, material);
+
+            const powerText_ca = `Potència: <strong>${P}W</strong>, Longitud: <strong>${L}m</strong>, Factor Potència: <strong>${fp}</strong>`;
+            const powerText_es = `Potencia: <strong>${P}W</strong>, Longitud: <strong>${L}m</strong>, Factor Potencia: <strong>${fp}</strong>`;
+			const installation_text_ca = `Tipus d'instal·lació: <strong>${INSTALLATION_METHODS.ca[method]} (${method})</strong>, Aïllament: <strong>${insulation.toUpperCase()}</strong>`;
+			const installation_text_es = `Tipo de instalación: <strong>${INSTALLATION_METHODS.es[method]} (${method})</strong>, Aislamiento: <strong>${insulation.toUpperCase()}</strong>`;
+
+            const numConductors = isMonofasica ? 2 : 3;
+            const conductor_text_ca = `${numConductors} conductors carregats`;
+            const conductor_text_es = `${numConductors} conductores cargados`;
+            const tipo_ca = isMonofasica ? translations.ca.monofasica : translations.ca.trifasica;
+            const tipo_es = isMonofasica ? translations.es.monofasica : translations.es.trifasica;
+
+            const calculo_ca = `<b>1. Càlcul de Secció per Intensitat (S_i):</b><br>
+- Classificació: Instal·lació <strong>${method}</strong>, Aïllament <strong>${insulation.toUpperCase()}</strong>, ${tipo_ca} (${conductor_text_ca}).<br>
+- Intensitat de càlcul: I = ${formatDecimal(I)} A.<br>
+- Segons la taula de la ITC-BT-19, la secció necessària és <strong>S_i = ${S_i} mm²</strong>.<br><br>
+<b>2. Càlcul de Secció per Caiguda de Tensió (S_vd):</b><br>
+- S_vd = ${formatDecimal(S_vd)} mm².<br><br>
+<b>3. Selecció Final:</b><br>
+- S'escull la secció més gran: max(S_i, S_vd) = max(${S_i}, ${formatDecimal(S_vd)}) = ${formatDecimal(S_final_calc)} mm².<br>
+- La secció normalitzada immediatament superior és <strong>${S_norm} mm²</strong>.`;
+
+            const calculo_es = `<b>1. Cálculo de Sección por Intensidad (S_i):</b><br>
+- Clasificación: Instalación <strong>${method}</strong>, Aislamiento <strong>${insulation.toUpperCase()}</strong>, ${tipo_es} (${conductor_text_es}).<br>
+- Intensidad de cálculo: I = ${formatDecimal(I)} A.<br>
+- Según la tabla de la ITC-BT-19, la sección necesaria es <strong>S_i = ${S_i} mm²</strong>.<br><br>
+<b>2. Cálculo de Sección por Caída de Tensión (S_vd):</b><br>
+- S_vd = ${formatDecimal(S_vd)} mm².<br><br>
+<b>3. Selección Final:</b><br>
+- Se escoge la sección mayor: max(S_i, S_vd) = max(${S_i}, ${formatDecimal(S_vd)}) = ${formatDecimal(S_final_calc)} mm².<br>
+- La sección normalizada inmediatamente superior es <strong>${S_norm} mm²</strong>.`;
+
+            return {
+                isMonofasica,
+                powerText: lang === 'ca' ? powerText_ca : powerText_es,
+                installation_text: lang === 'ca' ? installation_text_ca : installation_text_es,
+                conductorText: translations[lang][`conductor_${material}_${insulation}`],
+                caidaPorc,
+                S_norm,
+                calculo: lang === 'ca' ? calculo_ca : calculo_es
+            };
+        }
+
+
+        function generateSectionBothExamples() {
+            const container = document.getElementById('section-both-examples-container');
+            container.innerHTML = '';
+            const lang = currentLanguage;
+            for (let i = 0; i < 10; i++) {
+                const { isMonofasica, powerText, installation_text, conductorText, caidaPorc, S_norm, calculo } = generateSectionBothExerciseData(lang);
+                container.innerHTML += `<div class="exercise-card"><p><strong>${translations[lang].exercise} ${i + 1}:</strong> ${translations[lang].calc_section_for}</p><ul><li>${translations[lang].system}: <strong>${isMonofasica ? translations[lang].monofasic : translations[lang].trifasic}</strong></li><li>${powerText}</li><li>${installation_text}</li><li>${translations[lang].conductor}: <strong>${conductorText}</strong></li><li>${translations[lang].line_type}: <strong>${caidaPorc.text}</strong></li></ul><p class="explanation">${calculo}</p><p class="result">${translations[lang].result}: ${S_norm.toString().replace('.',',')} mm²</p></div>`;
+            }
+        }
+
+        function generateSectionBothTest() {
+            const container = document.getElementById('section-both-test-container');
+            container.innerHTML = '';
+            correctSectionBothAnswers = [];
+            document.getElementById('section-both-test-error').innerText = '';
+            const lang = currentLanguage;
+            for (let i = 0; i < 10; i++) {
+                const { isMonofasica, powerText, installation_text, conductorText, caidaPorc, S_norm } = generateSectionBothExerciseData(lang);
+                correctSectionBothAnswers.push(S_norm.toString());
+                container.innerHTML += `<div class="exercise-card"><p><strong>${i + 1}:</strong> ${translations[lang].calc_section_for}</p><ul><li>${translations[lang].system}: <strong>${isMonofasica ? translations[lang].monofasic : translations[lang].trifasic}</strong></li><li>${powerText}</li><li>${installation_text}</li><li>${translations[lang].conductor}: <strong>${conductorText}</strong></li><li>${translations[lang].line_type}: <strong>${caidaPorc.text}</strong></li></ul><label>${translations[lang].section} (mm²): <input type="text" id="section-both-q${i}"></label></div>`;
+            }
+            document.getElementById('section-both-test-buttons').innerHTML = `<button onclick="checkSectionBothAnswers()">${translations[lang].check_test_button}</button>`;
+        }
+
+        function checkSectionBothAnswers() {
+            let allCorrect = true;
+            const lang = currentLanguage;
+            document.querySelectorAll('#section-both-test-container .exercise-card').forEach((card, i) => {
+                const oldCorrection = card.querySelector('.correction-result');
+                if (oldCorrection) oldCorrection.remove();
+                const inputElement = document.getElementById(`section-both-q${i}`);
+                const userInput = inputElement.value.trim().replace(',', '.');
+                inputElement.classList.remove('correct', 'incorrect');
+                if (userInput !== '' && !isNaN(userInput) && parseFloat(userInput).toString() === correctSectionBothAnswers[i]) {
+                    inputElement.classList.add('correct');
+                } else {
+                    allCorrect = false;
+                    inputElement.classList.add('incorrect');
+                    const correctionEl = document.createElement('p');
+                    correctionEl.className = 'correction-result';
+                    correctionEl.innerHTML = `${translations[lang].correct_answer_is} <strong class="result">${correctSectionBothAnswers[i].replace('.', ',')} mm²</strong>`;
+                    card.appendChild(correctionEl);
+                }
+            });
+
+            if (allCorrect) {
+                const studentName = sessionStorage.getItem('currentUser');
+                if(studentProgress[studentName]){ studentProgress[studentName].sectionBothTest = translations[lang].status_approved; saveProgress(); }
+                showPage('final-page');
+            } else {
+                document.getElementById('section-both-test-error').innerText = translations[lang].incorrect_answers_feedback;
+                document.getElementById('section-both-test-buttons').innerHTML = `<button onclick="generateSectionBothTest()">${translations[lang].try_again_button}</button>`;
+            }
+        }
+
+        function generateMaxLengthBothExerciseData(lang) {
+			const material = "cobre";
+			const insulation = Math.random() > 0.5 ? "pvc" : "xlpe";
+			const methods = Object.keys(AMPACIDAD_ITC_BT_19[material][insulation]);
+			const method = methods[randomInt(0, methods.length - 1)];
+			
+            const tiposCaida = Object.keys(CAIDAS_TENSION[lang]);
+            let P, tipoCaidaKey, isMonofasica, fp, S_i, L_max, formula, V, I, caidaAbs, caidaPorc, conductividad;
+
+            do {
+                tipoCaidaKey = tiposCaida[randomInt(0, tiposCaida.length - 1)];
+                isMonofasica = tipoCaidaKey.startsWith('lga_') ? false : (Math.random() > 0.5);
+                const maxPower = isMonofasica ? 14690 : 25000;
+                P = randomInt(2000, maxPower);
+                fp = parseFloat(randomFloat(0.7, 1.0, 2));
+
+                if (isMonofasica) {
+                    V = V_MONOFASICA;
+                    I = P / (V * fp);
+                } else {
+                    V = V_TRIFASICA;
+                    I = P / (SQRT3 * V * fp);
+                }
+                S_i = getSectionByIntensity(I, material, insulation, method);
+
+                conductividad = CONDUCTIVIDAD[`${material}_${insulation}`];
+                caidaPorc = CAIDAS_TENSION[lang][tipoCaidaKey];
+                caidaAbs = V * caidaPorc.val;
+
+                if (isMonofasica) {
+                    L_max = (caidaAbs * conductividad * S_i * V) / (2 * P);
+                    formula = `L = (ΔV ⋅ γ ⋅ S ⋅ V) / (2 ⋅ P)`;
+                } else {
+                    L_max = (caidaAbs * conductividad * S_i * V) / P;
+                    formula = `L = (ΔV ⋅ γ ⋅ S ⋅ V) / P`;
+                }
+            } while (L_max > 400 || L_max < 10);
+
+            const powerText_ca = `Potència: <strong>${P}W</strong>, Factor Potència: <strong>${fp}</strong>`;
+            const powerText_es = `Potencia: <strong>${P}W</strong>, Factor Potencia: <strong>${fp}</strong>`;
+			const installation_text_ca = `Tipus d'instal·lació: <strong>${INSTALLATION_METHODS.ca[method]} (${method})</strong>, Aïllament: <strong>${insulation.toUpperCase()}</strong>`;
+			const installation_text_es = `Tipo de instalación: <strong>${INSTALLATION_METHODS.es[method]} (${method})</strong>, Aislamiento: <strong>${insulation.toUpperCase()}</strong>`;
+            
+            const numConductors = isMonofasica ? 2 : 3;
+            const conductor_text_ca = `${numConductors} conductors carregats`;
+            const conductor_text_es = `${numConductors} conductores cargados`;
+            const tipo_ca = isMonofasica ? translations.ca.monofasica : translations.ca.trifasica;
+            const tipo_es = isMonofasica ? translations.es.monofasica : translations.es.trifasica;
+
+            const calculo_ca = `<b>1. Càlcul de Secció per Intensitat (S_i):</b><br>
+- Classificació: Instal·lació <strong>${method}</strong>, Aïllament <strong>${insulation.toUpperCase()}</strong>, ${tipo_ca} (${conductor_text_ca}).<br>
+- Intensitat de càlcul: I = ${formatDecimal(I)} A.<br>
+- Segons la taula de la ITC-BT-19, la secció mínima necessària és <strong>S_i = ${S_i} mm²</strong>.<br><br>
+<b>2. Càlcul de la Longitud Màxima (L_max):</b><br>
+- Amb la secció S = ${S_i} mm², la longitud màxima per no superar la caiguda de tensió màxima (${formatDecimal(caidaPorc.val * 100)}%) és:<br>
+- ΔV_max = ${V}V ⋅ ${caidaPorc.val} = ${formatDecimal(caidaAbs, 3)}V.<br>
+- L_max = ${formatDecimal(L_max)} m.`;
+
+            const calculo_es = `<b>1. Cálculo de Sección por Intensidad (S_i):</b><br>
+- Clasificación: Instalación <strong>${method}</strong>, Aislamiento <strong>${insulation.toUpperCase()}</strong>, ${tipo_es} (${conductor_text_es}).<br>
+- Intensidad de cálculo: I = ${formatDecimal(I)} A.<br>
+- Según la tabla de la ITC-BT-19, la sección mínima necesaria es <strong>S_i = ${S_i} mm²</strong>.<br><br>
+<b>2. Cálculo de la Longitud Máxima (L_max):</b><br>
+- Con la sección S = ${S_i} mm², la longitud máxima para no superar la caída de tensión máxima (${formatDecimal(caidaPorc.val * 100)}%) es:<br>
+- ΔV_max = ${V}V ⋅ ${caidaPorc.val} = ${formatDecimal(caidaAbs, 3)}V.<br>
+- L_max = ${formatDecimal(L_max)} m.`;
+
+            return {
+                isMonofasica,
+                powerText: lang === 'ca' ? powerText_ca : powerText_es,
+				installation_text: lang === 'ca' ? installation_text_ca : installation_text_es,
+                conductorText: translations[lang][`conductor_${material}_${insulation}`],
+                caidaPorc,
+                S_i,
+                L_max,
+                formula,
+                calculo: lang === 'ca' ? calculo_ca : calculo_es
+            };
+        }
+
+
+        function generateMaxLengthBothExamples() {
+            const container = document.getElementById('max-length-both-examples-container');
+            container.innerHTML = '';
+            const lang = currentLanguage;
+            for (let i = 0; i < 10; i++) {
+                const { isMonofasica, powerText, installation_text, conductorText, caidaPorc, S_i, L_max, formula, calculo } = generateMaxLengthBothExerciseData(lang);
+                container.innerHTML += `<div class="exercise-card"><p><strong>${translations[lang].exercise} ${i + 1}:</strong></p><ul><li>${translations[lang].system}: <strong>${isMonofasica ? translations[lang].monofasic : translations[lang].trifasic}</strong></li><li>${powerText}</li><li>${installation_text}</li><li>${translations[lang].conductor}: <strong>${conductorText}</strong></li><li>${translations[lang].line_type}: <strong>${caidaPorc.text}</strong></li></ul><p class="explanation">${calculo}</p><p class="result">${translations[lang].max_length}: ${formatDecimal(L_max)} m</p></div>`;
+            }
+        }
+
+        function generateMaxLengthBothTest() {
+            const container = document.getElementById('max-length-both-test-container');
+            container.innerHTML = '';
+            correctMaxLengthBothAnswers = [];
+            document.getElementById('max-length-both-test-error').innerText = '';
+            const lang = currentLanguage;
+            for (let i = 0; i < 10; i++) {
+                const { isMonofasica, powerText, installation_text, conductorText, caidaPorc, L_max } = generateMaxLengthBothExerciseData(lang);
+                correctMaxLengthBothAnswers.push(L_max.toFixed(2));
+                container.innerHTML += `<div class="exercise-card"><p><strong>${i + 1}:</strong></p><ul><li>${translations[lang].system}: <strong>${isMonofasica ? translations[lang].monofasic : translations[lang].trifasic}</strong></li><li>${powerText}</li><li>${installation_text}</li><li>${translations[lang].conductor}: <strong>${conductorText}</strong></li><li>${translations[lang].line_type}: <strong>${caidaPorc.text}</strong></li></ul><label>${translations[lang].max_length} (m): <input type="text" id="max-length-both-q${i}"></label></div>`;
+            }
+            document.getElementById('max-length-both-test-buttons').innerHTML = `<button onclick="checkMaxLengthBothAnswers()">${translations[lang].check_test_button}</button>`;
+        }
+
+        function checkMaxLengthBothAnswers() {
+            let allCorrect = true;
+            const lang = currentLanguage;
+            document.querySelectorAll('#max-length-both-test-container .exercise-card').forEach((card, i) => {
+                const oldCorrection = card.querySelector('.correction-result');
+                if (oldCorrection) oldCorrection.remove();
+                const inputElement = document.getElementById(`max-length-both-q${i}`);
+                const userInput = inputElement.value.trim().replace(',', '.');
+                inputElement.classList.remove('correct', 'incorrect');
+                if (userInput !== '' && !isNaN(userInput) && parseFloat(userInput).toFixed(2) === correctMaxLengthBothAnswers[i]) {
+                    inputElement.classList.add('correct');
+                } else {
+                    allCorrect = false;
+                    inputElement.classList.add('incorrect');
+                    const correctionEl = document.createElement('p');
+                    correctionEl.className = 'correction-result';
+                    correctionEl.innerHTML = `${translations[lang].correct_answer_is} <strong class="result">${formatDecimal(parseFloat(correctMaxLengthBothAnswers[i]))} m</strong>`;
+                    card.appendChild(correctionEl);
+                }
+            });
+
+            if (allCorrect) {
+                const studentName = sessionStorage.getItem('currentUser');
+                if(studentProgress[studentName]){ studentProgress[studentName].maxLengthBothTest = translations[lang].status_approved; saveProgress(); }
+                showPage('final-page');
+            } else {
+                document.getElementById('max-length-both-test-error').innerText = translations[lang].incorrect_answers_feedback;
+                document.getElementById('max-length-both-test-buttons').innerHTML = `<button onclick="generateMaxLengthBothTest()">${translations[lang].try_again_button}</button>`;
+            }
+        }
+
+        // ===================== LÓGICA DE PROFESOR =====================
+        function populateStudentDropdown() {
+            const studentSelect = document.getElementById('student-select');
+            if (studentSelect) {
+                if (studentList && studentList.length > 0) {
+                    studentSelect.innerHTML = `<option value="">${translations[currentLanguage].student_select_loaded}</option>`;
+                    studentList.forEach(student => {
+                        const option = document.createElement('option');
+                        option.value = student.nombre;
+                        option.textContent = student.nombre;
+                        studentSelect.appendChild(option);
+                    });
+                } else {
+                    studentSelect.innerHTML = `<option value="">${translations[currentLanguage].student_select_placeholder}</option>`;
+                }
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                try {
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    let json = XLSX.utils.sheet_to_json(worksheet, { header: ["nombre", "email"] });
+                    
+                    if (json.length > 0 && json[0].nombre && json[0].nombre.toLowerCase().trim() === 'alumne') {
+                        json.shift(); // Eliminar la cabecera
+                    }
+                    
+                    if(json.length === 0 || !json[0].nombre) { alert("L'arxiu sembla buit o no té el format esperat (dues columnes: nom, correu electrònic)."); return; }
+
+                    studentList = json.filter(s => s.nombre && s.nombre.trim() !== ""); 
+                    studentProgress = {};
+                    studentList.forEach(student => {
+                        studentProgress[student.nombre] = {
+                            email: student.email || 'N/A',
+                            intensityTest: translations[currentLanguage].status_pending,
+                            sectionTest: translations[currentLanguage].status_pending,
+                            voltageDropTest: translations[currentLanguage].status_pending,
+                            maxLengthTest: translations[currentLanguage].status_pending,
+                            sectionIntensityTest: translations[currentLanguage].status_pending,
+                            sectionBothTest: translations[currentLanguage].status_pending,
+                            maxLengthBothTest: translations[currentLanguage].status_pending
+                        };
+                    });
+
+                    saveData();
+                    populateStudentDropdown();
+                    displayProgressReport();
+                    alert(`${studentList.length} ${translations.ca.students_loaded_alert}`); 
+                } catch(error) {
+                    alert("Error en processar l'arxiu. Assegura't que sigui un arxiu ODS o CSV vàlid.");
+                    console.error(error);
+                }
+            };
+            reader.onerror = () => { alert("Error en llegir l'arxiu."); };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function displayProgressReport() {
+            const tableBody = document.getElementById('report-table-body');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+            
+            if (studentList.length === 0) { tableBody.innerHTML = `<tr><td colspan="10">${translations[currentLanguage].no_students_loaded}</td></tr>`; return; }
+
+            studentList.forEach(student => {
+                const progress = studentProgress[student.nombre] || { email: student.email, intensityTest: 'Pendent', sectionTest: 'Pendent', voltageDropTest: 'Pendent', maxLengthTest: 'Pendent', sectionIntensityTest: 'Pendent', sectionBothTest: 'Pendent', maxLengthBothTest: 'Pendent' };
+                const row = document.createElement('tr');
+                
+                const approvedWords = [translations.ca.status_approved, translations.es.status_approved];
+                const statusClass = (status) => (approvedWords.includes(status)) ? 'status-passed' : 'status-pending';
+
+                row.innerHTML = `
+                    <td>${student.nombre}</td>
+                    <td>${progress.email || student.email || 'N/A'}</td>
+                    <td class="${statusClass(progress.intensityTest)}">${progress.intensityTest}</td>
+                    <td class="${statusClass(progress.sectionTest)}">${progress.sectionTest}</td>
+                    <td class="${statusClass(progress.voltageDropTest)}">${progress.voltageDropTest}</td>
+                    <td class="${statusClass(progress.maxLengthTest)}">${progress.maxLengthTest}</td>
+                    <td class="${statusClass(progress.sectionIntensityTest)}">${progress.sectionIntensityTest}</td>
+                    <td class="${statusClass(progress.sectionBothTest)}">${progress.sectionBothTest}</td>
+                    <td class="${statusClass(progress.maxLengthBothTest)}">${progress.maxLengthBothTest}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+    </script>
+
+</body>
+</html>
